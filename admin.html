@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Luckieverse Admin MVP v2</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6fa;color:#2d3436;}
+.layout{display:flex;min-height:100vh;}
+
+/* Sidebar - Game List */
+.sidebar{width:260px;background:#2d3436;color:#fff;padding:20px 0;flex-shrink:0;position:fixed;top:0;left:0;height:100vh;overflow-y:auto;}
+.sidebar-logo{padding:0 20px 16px;font-size:17px;font-weight:800;border-bottom:1px solid #444;margin-bottom:12px;}
+.sidebar-logo span{color:#6c5ce7;}
+.sidebar-label{padding:0 20px;font-size:10px;color:#636e72;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+.game-list{list-style:none;}
+.game-item{padding:10px 20px;cursor:pointer;font-size:13px;color:#b2bec3;transition:all .2s;display:flex;justify-content:space-between;align-items:center;}
+.game-item:hover{background:#3d3d3d;color:#fff;}
+.game-item.active{background:#3d3d3d;color:#fff;border-left:3px solid #6c5ce7;}
+.game-item .status{width:8px;height:8px;border-radius:50;flex-shrink:0;}
+.game-item .status.on{background:#00b894;border-radius:50%;}.game-item .status.off{background:#636e72;border-radius:50%;}
+.game-item-name{flex:1;margin-right:8px;}
+.add-game-btn{margin:12px 20px;padding:8px;border:2px dashed #444;border-radius:8px;color:#636e72;font-size:12px;font-weight:600;cursor:pointer;text-align:center;transition:all .2s;}
+.add-game-btn:hover{border-color:#6c5ce7;color:#6c5ce7;}
+
+/* Main */
+.main{margin-left:260px;padding:24px;flex:1;}
+.main-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.main-header h2{font-size:20px;font-weight:800;}
+.btn-bar{display:flex;gap:8px;}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+.btn:active{transform:scale(.97);}
+.btn-primary{background:#6c5ce7;color:#fff;}.btn-primary:hover{background:#5a4bd1;}
+.btn-game{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#4a3728;}
+.btn-danger{background:#ff7675;color:#fff;font-size:12px;padding:8px 16px;}
+.btn-sm{padding:8px 16px;font-size:12px;}
+
+.card{background:#fff;border-radius:12px;padding:20px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.card-title{font-size:14px;font-weight:700;margin-bottom:14px;padding-bottom:6px;border-bottom:2px solid #6c5ce7;display:flex;align-items:center;gap:8px;}
+.card-title .num{background:#6c5ce7;color:#fff;font-size:10px;font-weight:800;width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;}
+.card-sub{font-size:11px;color:#636e72;margin-bottom:14px;padding:6px 10px;background:#f8f9fa;border-radius:6px;}
+.row{display:flex;gap:12px;margin-bottom:12px;}.row:last-child{margin-bottom:0;}
+.field{flex:1;}
+.field label{display:block;font-size:11px;font-weight:600;color:#636e72;margin-bottom:3px;}
+.field input,.field select,.field textarea{width:100%;padding:8px 10px;border:1px solid #dfe6e9;border-radius:6px;font-size:13px;}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:#6c5ce7;}
+.hint{font-size:10px;color:#b2bec3;margin-top:2px;}
+
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.toggle{position:relative;width:40px;height:22px;cursor:pointer;flex-shrink:0;}
+.toggle input{display:none;}
+.toggle-slider{position:absolute;top:0;left:0;right:0;bottom:0;background:#dfe6e9;border-radius:11px;transition:.3s;}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.3s;}
+.toggle input:checked+.toggle-slider{background:#6c5ce7;}
+.toggle input:checked+.toggle-slider:before{transform:translateX(18px);}
+.toggle-label{font-size:13px;font-weight:600;}
+
+.section-divider{font-size:10px;color:#b2bec3;text-transform:uppercase;letter-spacing:1px;margin:6px 0 4px;padding-top:10px;border-top:1px solid #f1f2f6;}
+
+.prob-row{display:flex;gap:6px;align-items:center;margin-bottom:5px;}
+.prob-row input{width:60px;padding:6px;border:1px solid #dfe6e9;border-radius:5px;font-size:12px;text-align:center;}
+.prob-row span{font-size:12px;color:#636e72;}
+.prob-remove{background:none;border:none;color:#ff7675;cursor:pointer;font-size:14px;font-weight:700;}
+.prob-add{background:none;border:1px dashed #dfe6e9;border-radius:5px;padding:5px 10px;cursor:pointer;color:#636e72;font-size:11px;margin-top:3px;}
+.prob-add:hover{border-color:#6c5ce7;color:#6c5ce7;}
+.prob-total{font-size:10px;margin-top:3px;font-weight:600;}
+.prob-total.ok{color:#00b894;}.prob-total.bad{color:#ff7675;}
+
+.ig-item{background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:8px;position:relative;}
+.ig-remove{position:absolute;top:8px;right:8px;background:none;border:none;color:#ff7675;cursor:pointer;font-size:14px;font-weight:700;}
+.ig-add{background:none;border:2px dashed #dfe6e9;border-radius:8px;padding:8px;width:100%;cursor:pointer;color:#636e72;font-size:11px;font-weight:600;margin-top:6px;}
+.ig-add:hover{border-color:#6c5ce7;color:#6c5ce7;}
+
+.ad-setting{background:#f8f9fa;border-radius:8px;padding:12px;margin-bottom:10px;}
+.ad-setting-title{font-size:12px;font-weight:700;color:#636e72;margin-bottom:8px;}
+
+/* Game-specific config */
+.gs-field{margin-bottom:10px;}
+.gs-field label{display:block;font-size:11px;font-weight:600;color:#636e72;margin-bottom:3px;}
+.gs-field input{width:100%;padding:8px 10px;border:1px solid #dfe6e9;border-radius:6px;font-size:13px;}
+.gs-field input:focus{outline:none;border-color:#6c5ce7;}
+
+.flow-preview{background:#f8f9fa;border-radius:8px;padding:12px;margin-top:8px;}
+.fp-step{display:flex;align-items:center;gap:8px;margin-bottom:4px;}.fp-step:last-child{margin-bottom:0;}
+.fp-badge{padding:2px 7px;border-radius:4px;font-size:9px;font-weight:700;min-width:50px;text-align:center;}
+.fp-badge.play{background:#dfe6e9;color:#2d3436;}.fp-badge.ad{background:#ffeaa7;color:#6d4c00;}.fp-badge.reward{background:#d4edda;color:#155724;}
+.fp-text{font-size:11px;color:#636e72;}.fp-arrow{color:#b2bec3;font-size:12px;margin-left:24px;}
+
+.saved-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#00b894;color:#fff;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:600;display:none;z-index:999;}
+.empty-state{text-align:center;padding:60px 20px;color:#b2bec3;}
+.empty-state h3{margin-bottom:8px;color:#636e72;}
+</style>
+</head>
+<body>
+<div class="saved-toast" id="toast">저장 완료!</div>
+<div class="layout">
+
+<!-- Sidebar: Game List -->
+<nav class="sidebar">
+  <div class="sidebar-logo"><span>Luckieverse</span> Admin</div>
+  <div class="sidebar-label">등록된 게임</div>
+  <ul class="game-list" id="gameList"></ul>
+  <div class="add-game-btn" onclick="addGame()">+ 게임 추가</div>
+</nav>
+
+<!-- Main -->
+<div class="main">
+  <!-- Empty state -->
+  <div class="empty-state" id="emptyState" style="display:none;">
+    <h3>게임을 선택하세요</h3>
+    <p>좌측에서 게임을 선택하거나 새 게임을 추가하세요</p>
+  </div>
+
+  <!-- Game Settings -->
+  <div id="settingsPanel" style="display:none;">
+    <div class="main-header">
+      <h2 id="panelTitle">게임 설정</h2>
+      <div class="btn-bar">
+        <button class="btn btn-danger btn-sm" onclick="deleteGame()">삭제</button>
+        <button class="btn btn-primary btn-sm" onclick="save()">저장</button>
+        <button class="btn btn-game btn-sm" onclick="openGame()">게임 열기</button>
+      </div>
+    </div>
+
+    <!-- 3. PLAY -->
+    <div class="card">
+      <div class="card-title"><span class="num">3</span>PLAY 스텝</div>
+      <div class="row">
+        <div class="field"><label>게임명</label><input type="text" id="gameName"></div>
+        <div class="field"><label>게임 콘텐츠</label>
+          <select id="gameContent">
+            <option value="games/tetris.html">테트리스 퍼즐</option>
+            <option value="games/whack-a-mole.html">두더지 잡기</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>클리어 조건</label>
+          <select id="clearType" onchange="onClearTypeChange()">
+            <option value="점수 도달">점수 도달</option>
+            <option value="시간 경과">시간 경과</option>
+          </select>
+        </div>
+      </div>
+      <div id="scoreFields">
+        <div class="row">
+          <div class="field"><label>목표 점수</label><input type="number" id="clearValue" value="3000" min="100" step="100"></div>
+          <div class="field"><label>제한 시간 (초)</label><input type="number" id="timeLimit" value="120" min="10"></div>
+        </div>
+      </div>
+      <div id="timeFields" style="display:none;">
+        <div class="row">
+          <div class="field"><label>플레이 시간 (초)</label><input type="number" id="playDuration" value="120" min="10"><div class="hint">이 시간 동안 버티면 클리어</div></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 4. AD -->
+    <div class="card">
+      <div class="card-title"><span class="num">4</span>AD 스텝</div>
+      <div class="ad-setting">
+        <div class="ad-setting-title">진입 권한형 — PLAY 앞</div>
+        <div class="toggle-row"><label class="toggle"><input type="checkbox" id="adEntryOn"><span class="toggle-slider"></span></label><span class="toggle-label">게임 시작 전 광고</span></div>
+        <div id="adEntryFields" style="display:none;">
+          <div class="row"><div class="field"><label>필수 여부</label><select id="adEntryRequired"><option value="필수">필수</option><option value="선택">선택</option></select></div></div>
+        </div>
+      </div>
+      <div class="ad-setting">
+        <div class="ad-setting-title">보상 수령형 — REWARD 앞</div>
+        <div class="toggle-row"><label class="toggle"><input type="checkbox" id="adRewardOn" checked><span class="toggle-slider"></span></label><span class="toggle-label">보상 수령 전 광고</span></div>
+        <div id="adRewardFields"><div class="row"><div class="field"><label>필수 여부</label><select id="adRewardRequired"><option value="필수" selected>필수</option><option value="선택">선택</option></select></div></div></div>
+      </div>
+      <div class="ad-setting">
+        <div class="ad-setting-title">보상 업그레이드형 — REWARD 뒤</div>
+        <div class="toggle-row"><label class="toggle"><input type="checkbox" id="adUpgradeOn" checked><span class="toggle-slider"></span></label><span class="toggle-label">보상 업그레이드 광고</span></div>
+      </div>
+    </div>
+
+    <!-- 5. REWARD -->
+    <div class="card">
+      <div class="card-title"><span class="num">5</span>REWARD 스텝</div>
+      <div class="section-divider">5-1. 현금성 보상</div>
+      <div class="row"><div class="field"><label>보상 방식</label>
+        <select id="rewardType" onchange="onRewardTypeChange()"><option value="fixed">직접 포인트 (고정)</option><option value="random" selected>선물상자 (랜덤)</option></select>
+      </div></div>
+      <div id="rewardFixed" style="display:none;"><div class="row"><div class="field"><label>포인트</label><input type="number" id="rewardFixedVal" value="3" min="1"></div></div></div>
+      <div id="rewardRandom">
+        <label style="font-size:11px;font-weight:600;color:#636e72;margin-bottom:4px;display:block;">포인트별 확률</label>
+        <div id="rewardTiers"></div>
+        <button class="prob-add" onclick="addRTier()">+ 구간 추가</button>
+        <div class="prob-total" id="rewardTotal"></div>
+      </div>
+      <div id="upgradeRewardSection">
+        <div class="section-divider">업그레이드 보상</div>
+        <div class="row"><div class="field"><label>방식</label>
+          <select id="upgradeType" onchange="onUpgradeTypeChange()"><option value="fixed">직접 포인트 (고정)</option><option value="random" selected>선물상자 (강화)</option></select>
+        </div></div>
+        <div id="upgradeFixed" style="display:none;"><div class="row"><div class="field"><label>포인트</label><input type="number" id="upgradeFixedVal" value="6" min="1"></div></div></div>
+        <div id="upgradeRandom">
+          <div id="upgradeTiers"></div>
+          <button class="prob-add" onclick="addUTier()">+ 구간 추가</button>
+          <div class="prob-total" id="upgradeTotal"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. 운영 -->
+    <div class="card">
+      <div class="card-title"><span class="num">6</span>운영 정책</div>
+      <div class="row">
+        <div class="field"><label>일일 플레이 횟수</label><input type="number" id="dailyPlays" value="5" min="1"></div>
+        <div class="field"><label>일일 포인트 한도</label><input type="number" id="dailyPoints" value="15" min="1"></div>
+      </div>
+    </div>
+
+    <!-- Flow Preview -->
+    <div class="card">
+      <div class="card-title">보상 흐름 미리보기</div>
+      <div class="flow-preview" id="flowPreview"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+// ===== DATA =====
+const STORAGE='luckieverse_games';
+function loadGames(){return JSON.parse(localStorage.getItem(STORAGE)||'[]');}
+function saveGames(g){localStorage.setItem(STORAGE,JSON.stringify(g));}
+
+let rT=[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}];
+let uT=[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}];
+let curGameId=null;
+
+// ===== SAMPLE DATA =====
+function initSampleData(){
+  const ver='v5';
+  if(localStorage.getItem('lv_admin_ver')===ver)return;
+  localStorage.removeItem(STORAGE);localStorage.removeItem('luckieverse_game_config');
+  localStorage.setItem('lv_admin_ver',ver);
+  const samples=[
+    {
+      id:'g1',name:'두더지 테트리스',content:'games/tetris.html',active:true,
+      clearType:'점수 도달',clearValue:3000,timeLimit:120,playDuration:120,
+      adEntry:{on:false,required:'필수'},adReward:{on:true,required:'필수'},adUpgrade:{on:true},
+      rewardType:'random',rewardFixedVal:3,rewardTiers:[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}],
+      upgradeType:'random',upgradeFixedVal:6,upgradeTiers:[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}],
+      dailyPlays:5,dailyPoints:15,
+    },
+    {
+      id:'g2',name:'두더지 잡기',content:'games/whack-a-mole.html',active:true,
+      clearType:'점수 도달',clearValue:2000,timeLimit:60,playDuration:60,
+      adEntry:{on:false,required:'필수'},adReward:{on:true,required:'필수'},adUpgrade:{on:true},
+      rewardType:'random',rewardFixedVal:3,rewardTiers:[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}],
+      upgradeType:'random',upgradeFixedVal:6,upgradeTiers:[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}],
+      dailyPlays:5,dailyPoints:15,
+    },
+  ];
+  saveGames(samples);
+}
+
+// ===== GAME LIST =====
+function renderGameList(){
+  const games=loadGames();
+  const list=document.getElementById('gameList');
+  list.innerHTML=games.map(g=>`
+    <li class="game-item ${curGameId===g.id?'active':''}" onclick="selectGame('${g.id}')">
+      <span class="game-item-name">${g.name}</span>
+      <span class="status ${g.active?'on':'off'}"></span>
+    </li>
+  `).join('');
+  document.getElementById('emptyState').style.display=curGameId?'none':'block';
+  document.getElementById('settingsPanel').style.display=curGameId?'block':'none';
+}
+
+function selectGame(id){
+  curGameId=id;
+  renderGameList();
+  loadGameToForm(id);
+}
+
+function addGame(){
+  const games=loadGames();
+  const id='g'+Date.now();
+  games.push({
+    id,name:'새 게임',content:'games/tetris.html',active:true,
+    clearType:'점수 도달',clearValue:3000,timeLimit:120,playDuration:120,
+    adEntry:{on:false,required:'필수'},adReward:{on:true,required:'필수'},adUpgrade:{on:true},
+    rewardType:'random',rewardFixedVal:3,rewardTiers:[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}],
+    upgradeType:'random',upgradeFixedVal:6,upgradeTiers:[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}],
+    dailyPlays:5,dailyPoints:15,
+  });
+  saveGames(games);
+  selectGame(id);
+}
+
+function deleteGame(){
+  if(!curGameId||!confirm('이 게임을 삭제하시겠습니까?'))return;
+  const games=loadGames().filter(g=>g.id!==curGameId);
+  saveGames(games);curGameId=null;
+  renderGameList();
+}
+
+// ===== LOAD GAME TO FORM =====
+function loadGameToForm(id){
+  const g=loadGames().find(g=>g.id===id);if(!g)return;
+  document.getElementById('panelTitle').textContent=g.name+' 설정';
+  document.getElementById('gameName').value=g.name||'';
+  document.getElementById('gameContent').value=g.content||'games/tetris.html';
+  document.getElementById('clearType').value=g.clearType||'점수 도달';
+  document.getElementById('clearValue').value=g.clearValue||3000;
+  document.getElementById('timeLimit').value=g.timeLimit||120;
+  document.getElementById('playDuration').value=g.playDuration||120;
+  document.getElementById('adEntryOn').checked=g.adEntry?.on||false;
+  document.getElementById('adEntryRequired').value=g.adEntry?.required||'필수';
+  document.getElementById('adEntryFields').style.display=g.adEntry?.on?'block':'none';
+  document.getElementById('adRewardOn').checked=g.adReward?.on!==false;
+  document.getElementById('adRewardRequired').value=g.adReward?.required||'필수';
+  document.getElementById('adRewardFields').style.display=g.adReward?.on!==false?'block':'none';
+  document.getElementById('adUpgradeOn').checked=g.adUpgrade?.on!==false;
+  document.getElementById('upgradeRewardSection').style.display=g.adUpgrade?.on!==false?'block':'none';
+  document.getElementById('rewardType').value=g.rewardType||'random';
+  document.getElementById('rewardFixedVal').value=g.rewardFixedVal||3;
+  rT=JSON.parse(JSON.stringify(g.rewardTiers||[]));
+  document.getElementById('upgradeType').value=g.upgradeType||'random';
+  document.getElementById('upgradeFixedVal').value=g.upgradeFixedVal||6;
+  uT=JSON.parse(JSON.stringify(g.upgradeTiers||[]));
+  document.getElementById('dailyPlays').value=g.dailyPlays||5;
+  document.getElementById('dailyPoints').value=g.dailyPoints||15;
+  onClearTypeChange();onRewardTypeChange();onUpgradeTypeChange();
+  renderAll();preview();
+}
+
+// ===== TIERS =====
+function renderTiers(t,cId,tId,pf){
+  const c=document.getElementById(cId);
+  c.innerHTML=t.map((v,i)=>`<div class="prob-row"><input type="number" value="${v.p}" min="0" onchange="${pf}[${i}].p=parseInt(this.value)||0;renderAll();"><span>P</span><input type="number" value="${v.pct}" min="0" max="100" onchange="${pf}[${i}].pct=parseFloat(this.value)||0;renderAll();"><span>%</span><button class="prob-remove" onclick="${pf}.splice(${i},1);renderAll();">&times;</button></div>`).join('');
+  const s=t.reduce((a,v)=>a+v.pct,0);const el=document.getElementById(tId);
+  el.textContent=t.length?`합계: ${s}%`:'';el.className='prob-total '+(Math.abs(s-100)<.01?'ok':'bad');
+}
+function renderAll(){renderTiers(rT,'rewardTiers','rewardTotal','rT');renderTiers(uT,'upgradeTiers','upgradeTotal','uT');}
+function addRTier(){rT.push({p:0,pct:0});renderAll();}
+function addUTier(){uT.push({p:0,pct:0});renderAll();}
+
+// ===== TOGGLES =====
+function setupToggles(){
+  document.getElementById('adEntryOn').addEventListener('change',function(){document.getElementById('adEntryFields').style.display=this.checked?'block':'none';preview();});
+  document.getElementById('adRewardOn').addEventListener('change',function(){document.getElementById('adRewardFields').style.display=this.checked?'block':'none';preview();});
+  document.getElementById('adUpgradeOn').addEventListener('change',function(){document.getElementById('upgradeRewardSection').style.display=this.checked?'block':'none';preview();});
+}
+function onClearTypeChange(){
+  const isTime=document.getElementById('clearType').value==='시간 경과';
+  document.getElementById('scoreFields').style.display=isTime?'none':'block';
+  document.getElementById('timeFields').style.display=isTime?'block':'none';preview();
+}
+function onRewardTypeChange(){const v=document.getElementById('rewardType').value;document.getElementById('rewardFixed').style.display=v==='fixed'?'block':'none';document.getElementById('rewardRandom').style.display=v!=='fixed'?'block':'none';preview();}
+function onUpgradeTypeChange(){const v=document.getElementById('upgradeType').value;document.getElementById('upgradeFixed').style.display=v==='fixed'?'block':'none';document.getElementById('upgradeRandom').style.display=v!=='fixed'?'block':'none';preview();}
+
+// ===== FLOW PREVIEW =====
+function preview(){
+  const entryOn=document.getElementById('adEntryOn').checked;
+  const rewardAdOn=document.getElementById('adRewardOn').checked;
+  const upgradeOn=document.getElementById('adUpgradeOn').checked;
+  const ct=document.getElementById('clearType').value;
+  const isTime=ct==='시간 경과';
+  const cv=isTime?document.getElementById('playDuration').value:document.getElementById('clearValue').value;
+  const time=isTime?cv:document.getElementById('timeLimit').value;
+  const rType=document.getElementById('rewardType').value;
+  let rSum;if(rType==='fixed')rSum=(document.getElementById('rewardFixedVal').value||'?')+'P';
+  else{const s=[...rT].sort((a,b)=>a.p-b.p);rSum=s.length?s[0].p+'~'+s[s.length-1].p+'P':'?P';}
+  let h='';
+  if(entryOn)h+=`<div class="fp-step"><span class="fp-badge ad">AD</span><span class="fp-text">진입 권한형</span></div><div class="fp-arrow">↓</div>`;
+  h+=`<div class="fp-step"><span class="fp-badge play">PLAY</span><span class="fp-text">${ct} / ${isTime?time+'초 생존':'목표 '+Number(cv).toLocaleString()+'점 / '+time+'초'}</span></div>`;
+  if(rewardAdOn)h+=`<div class="fp-arrow">↓</div><div class="fp-step"><span class="fp-badge ad">AD</span><span class="fp-text">보상 수령형</span></div>`;
+  h+=`<div class="fp-arrow">↓</div><div class="fp-step"><span class="fp-badge reward">REWARD</span><span class="fp-text">${rType==='fixed'?'직접 포인트':'선물상자'} / ${rSum}</span></div>`;
+  if(upgradeOn){
+    const uType=document.getElementById('upgradeType').value;let uSum;
+    if(uType==='fixed')uSum=(document.getElementById('upgradeFixedVal').value||'?')+'P';
+    else{const s=[...uT].sort((a,b)=>a.p-b.p);uSum=s.length?s[0].p+'~'+s[s.length-1].p+'P':'?P';}
+    h+=`<div class="fp-arrow">↓</div><div class="fp-step"><span class="fp-badge ad">AD</span><span class="fp-text">업그레이드형</span></div><div class="fp-arrow">↓</div><div class="fp-step"><span class="fp-badge reward">REWARD</span><span class="fp-text">${uType==='fixed'?'직접 포인트':'선물상자(강화)'} / ${uSum}</span></div>`;
+  }
+  document.getElementById('flowPreview').innerHTML=h;
+}
+
+// ===== SAVE =====
+function save(){
+  if(!curGameId)return;
+  const games=loadGames();
+  const idx=games.findIndex(g=>g.id===curGameId);if(idx<0)return;
+  games[idx]={
+    ...games[idx],
+    name:document.getElementById('gameName').value,
+    content:document.getElementById('gameContent').value,
+    clearType:document.getElementById('clearType').value,
+    clearValue:parseInt(document.getElementById('clearValue').value)||3000,
+    timeLimit:parseInt(document.getElementById('timeLimit').value)||120,
+    playDuration:parseInt(document.getElementById('playDuration').value)||120,
+    adEntry:{on:document.getElementById('adEntryOn').checked,required:document.getElementById('adEntryRequired').value},
+    adReward:{on:document.getElementById('adRewardOn').checked,required:document.getElementById('adRewardRequired').value},
+    adUpgrade:{on:document.getElementById('adUpgradeOn').checked},
+    rewardType:document.getElementById('rewardType').value,
+    rewardFixedVal:parseInt(document.getElementById('rewardFixedVal').value)||3,
+    rewardTiers:rT,
+    upgradeType:document.getElementById('upgradeType').value,
+    upgradeFixedVal:parseInt(document.getElementById('upgradeFixedVal').value)||6,
+    upgradeTiers:uT,
+    dailyPlays:parseInt(document.getElementById('dailyPlays').value)||5,
+    dailyPoints:parseInt(document.getElementById('dailyPoints').value)||15,
+  };
+  saveGames(games);
+  // 플랫폼용으로도 현재 게임 설정 저장
+  localStorage.setItem('luckieverse_game_config',JSON.stringify(games[idx]));
+  document.getElementById('panelTitle').textContent=games[idx].name+' 설정';
+  renderGameList();
+  const t=document.getElementById('toast');t.style.display='block';setTimeout(()=>t.style.display='none',2000);
+}
+
+function openGame(){save();window.open('platform.html','_blank');}
+
+// ===== INIT =====
+initSampleData();
+setupToggles();
+renderGameList();
+// Auto-select first game
+const firstGame=loadGames()[0];
+if(firstGame)selectGame(firstGame.id);
+
+document.querySelectorAll('#settingsPanel input,#settingsPanel select').forEach(el=>{el.addEventListener('input',preview);el.addEventListener('change',preview);});
+</script>
+</body>
+</html>

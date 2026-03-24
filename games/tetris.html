@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tetris Game Content</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{width:100%;height:100%;background:transparent;overflow:hidden;touch-action:none;}
+.wrap{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;padding:4px 0;}
+canvas#board{display:block;background:rgba(0,0,0,0.15);border-radius:6px;flex-shrink:0;}
+.touch-layer{position:absolute;top:0;left:0;right:0;bottom:50px;z-index:5;}
+
+/* Items bar */
+.items-bar{display:flex;justify-content:center;gap:8px;padding:6px 8px;width:100%;flex-shrink:0;}
+.gi-btn{background:rgba(74,55,40,0.85);border:2px solid #c4a882;border-radius:12px;padding:6px 10px;color:#fff;font-size:10px;font-weight:700;cursor:pointer;text-align:center;min-width:70px;position:relative;transition:all .15s;z-index:10;}
+.gi-btn:active{transform:scale(.93);}
+.gi-btn.off{opacity:.35;pointer-events:none;}
+.gi-btn .gi-ic{font-size:18px;display:block;}
+.gi-btn .gi-nm{display:block;font-size:9px;margin-top:1px;}
+.gi-btn .gi-cnt{position:absolute;top:-5px;right:-5px;background:#ff6b6b;color:#fff;font-size:9px;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.gi-btn .gi-ab{font-size:7px;color:#ffd700;display:block;margin-top:1px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="board"></canvas>
+  <div class="touch-layer" id="touchLayer"></div>
+  <div class="items-bar" id="itemsBar"></div>
+</div>
+
+<script>
+/**
+ * 순수 게임 콘텐츠 — 테트리스
+ * 인게임 아이템은 게임이 자체 관리
+ * 광고가 필요하면 플랫폼에 requestItem 요청
+ */
+
+const COLS=10,ROWS=18,CELL=Math.min(28, Math.floor((window.innerWidth-20)/COLS));
+const BW=COLS*CELL,BH=ROWS*CELL;
+const COLORS=[null,'#e07b39','#4a9e4a','#c9a028','#7b5ea7','#3c8dbc','#cc4444','#8b6914'];
+const PIECES=[[[1,1,1,1]],[[2,0],[2,0],[2,2]],[[0,3],[0,3],[3,3]],[[4,4],[4,4]],[[0,5,5],[5,5,0]],[[6,6,0],[0,6,6]],[[0,7,0],[7,7,7]]];
+
+const cv=document.getElementById('board');
+const cx=cv.getContext('2d');
+cv.width=BW;cv.height=BH;
+
+let board=[],cur=null,pos={x:0,y:0},nxt=null;
+let score=0,active=false,gIv=null;
+let dropSpeed=800;
+
+// ===== In-game items (게임 자체 관리) =====
+let items={
+  clear:{name:'줄 초기화',icon:'💥',free:1,ad:2,fu:0,au:0},
+  time:{name:'시간+15초',icon:'⏰',free:1,ad:1,fu:0,au:0},
+};
+function iRem(t){const i=items[t];return(i.free-i.fu)+(i.ad-i.au);}
+function iNeedAd(t){return(items[t].free-items[t].fu)<=0;}
+
+function renderItems(){
+  document.getElementById('itemsBar').innerHTML=Object.entries(items).map(([k,it])=>`
+    <button class="gi-btn ${iRem(k)<=0?'off':''}" onmousedown="useItem('${k}')" ontouchstart="useItem('${k}')">
+      <span class="gi-cnt">${iRem(k)}</span>
+      <span class="gi-ic">${it.icon}</span>
+      <span class="gi-nm">${it.name}</span>
+      <span class="gi-ab">${iNeedAd(k)?'AD':'FREE'}</span>
+    </button>
+  `).join('');
+}
+
+function useItem(type){
+  if(!active||iRem(type)<=0)return;
+  if(!iNeedAd(type)){
+    items[type].fu++;
+    applyItem(type);
+    renderItems();
+  } else {
+    // 플랫폼에 광고 요청
+    send('requestItem',{effect:type});
+  }
+}
+
+function applyItem(effect){
+  if(effect==='clear'){
+    let c=0;
+    for(let r=ROWS-1;r>=0&&c<2;r--)if(board[r].some(v=>v)){board.splice(r,1);board.unshift(Array(COLS).fill(0));c++;}
+    score+=c*50;
+    send('scoreChange',{score});
+    draw();
+  }
+  // time: 플랫폼이 시간 관리하므로 여기서는 안 함
+}
+
+// ===== BRIDGE =====
+function send(type,data){window.parent.postMessage({type,...(data||{})},'*');}
+
+window.addEventListener('message',(e)=>{
+  if(!e.data||!e.data.type)return;
+  switch(e.data.type){
+    case 'start':
+      dropSpeed=e.data.dropSpeed||800;
+      startGame();
+      break;
+    case 'pause':
+      active=false;if(gIv)clearInterval(gIv);
+      break;
+    case 'resume':
+      active=true;gIv=setInterval(tick,dropSpeed);
+      break;
+    case 'itemGranted':
+      // 플랫폼이 광고 완료 후 승인
+      items[e.data.effect].au++;
+      applyItem(e.data.effect);
+      renderItems();
+      break;
+    case 'continueGranted':
+      for(let r=0;r<5;r++) board[r]=Array(COLS).fill(0);
+      active=true;spawn();draw();
+      gIv=setInterval(tick,dropSpeed);
+      break;
+  }
+});
+
+// ===== GAME =====
+function startGame(){
+  board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+  score=0;active=true;
+  items.clear.fu=0;items.clear.au=0;
+  items.time.fu=0;items.time.au=0;
+  renderItems();
+  spawn();draw();
+  gIv=setInterval(tick,dropSpeed);
+  send('scoreChange',{score:0});
+}
+
+function tick(){
+  if(!active)return;
+  if(!collides(cur,pos.x,pos.y+1)){pos.y++;}
+  else{merge();clearLines();spawn();}
+  draw();
+}
+
+// ===== BOARD =====
+function draw(){
+  cx.clearRect(0,0,BW,BH);
+  cx.strokeStyle='rgba(139,115,85,0.15)';cx.lineWidth=.5;
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)cx.strokeRect(c*CELL,r*CELL,CELL,CELL);
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(board[r][c])drawCell(c,r,COLORS[board[r][c]]);
+  if(cur&&active){
+    let gy=pos.y;while(!collides(cur,pos.x,gy+1))gy++;
+    for(let r=0;r<cur.length;r++)for(let c=0;c<cur[r].length;c++)if(cur[r][c]){cx.fillStyle='rgba(255,255,255,0.1)';cx.fillRect((pos.x+c)*CELL+1,(gy+r)*CELL+1,CELL-2,CELL-2);}
+    for(let r=0;r<cur.length;r++)for(let c=0;c<cur[r].length;c++)if(cur[r][c])drawCell(pos.x+c,pos.y+r,COLORS[cur[r][c]]);
+  }
+}
+function drawCell(x,y,col){
+  const p=x*CELL,q=y*CELL;
+  cx.fillStyle=col;cx.beginPath();cx.roundRect(p+1,q+1,CELL-2,CELL-2,4);cx.fill();
+  cx.fillStyle='rgba(255,255,255,0.25)';cx.beginPath();cx.roundRect(p+2,q+2,CELL-6,(CELL-4)/2,[4,4,0,0]);cx.fill();
+  cx.strokeStyle='rgba(0,0,0,0.2)';cx.lineWidth=1;cx.beginPath();cx.roundRect(p+1,q+1,CELL-2,CELL-2,4);cx.stroke();
+}
+
+function rndPiece(){const p=PIECES[Math.floor(Math.random()*PIECES.length)];return p.map(r=>[...r]);}
+function rotate(p){const r=p.length,c=p[0].length,n=Array.from({length:c},()=>Array(r).fill(0));for(let i=0;i<r;i++)for(let j=0;j<c;j++)n[j][r-1-i]=p[i][j];return n;}
+function collides(p,px,py){for(let r=0;r<p.length;r++)for(let c=0;c<p[r].length;c++){if(!p[r][c])continue;const nx=px+c,ny=py+r;if(nx<0||nx>=COLS||ny>=ROWS)return true;if(ny>=0&&board[ny][nx])return true;}return false;}
+function merge(){for(let r=0;r<cur.length;r++)for(let c=0;c<cur[r].length;c++)if(cur[r][c]){const ny=pos.y+r;if(ny>=0)board[ny][pos.x+c]=cur[r][c];}}
+function clearLines(){
+  let cl=0;
+  for(let r=ROWS-1;r>=0;r--){if(board[r].every(c=>c!==0)){board.splice(r,1);board.unshift(Array(COLS).fill(0));cl++;r++;}}
+  if(cl>0){score+=[0,100,300,700,1500][cl]||1500;send('scoreChange',{score});}
+}
+function spawn(){
+  cur=nxt||rndPiece();nxt=rndPiece();
+  pos={x:Math.floor((COLS-cur[0].length)/2),y:-1};
+  if(collides(cur,pos.x,pos.y)){active=false;clearInterval(gIv);send('gameOver');}
+}
+
+// ===== CONTROLS =====
+let tx=0,ty=0,tt=0;
+const tl=document.getElementById('touchLayer');
+tl.addEventListener('touchstart',(e)=>{e.preventDefault();tx=e.touches[0].clientX;ty=e.touches[0].clientY;tt=Date.now();},{passive:false});
+tl.addEventListener('touchend',(e)=>{e.preventDefault();if(!active)return;const dx=e.changedTouches[0].clientX-tx,dy=e.changedTouches[0].clientY-ty,dt=Date.now()-tt;if(Math.abs(dx)<15&&Math.abs(dy)<15&&dt<200){const ro=rotate(cur);if(!collides(ro,pos.x,pos.y))cur=ro;else if(!collides(ro,pos.x-1,pos.y)){cur=ro;pos.x--;}else if(!collides(ro,pos.x+1,pos.y)){cur=ro;pos.x++;}}else if(Math.abs(dy)>Math.abs(dx)&&dy>30){while(!collides(cur,pos.x,pos.y+1))pos.y++;merge();clearLines();spawn();}draw();},{passive:false});
+tl.addEventListener('touchmove',(e)=>{e.preventDefault();if(!active)return;const dx=e.touches[0].clientX-tx;if(Math.abs(dx)>30){if(!collides(cur,pos.x+(dx>0?1:-1),pos.y))pos.x+=(dx>0?1:-1);draw();tx=e.touches[0].clientX;}},{passive:false});
+document.addEventListener('keydown',(e)=>{if(!active)return;if(e.key==='ArrowLeft'&&!collides(cur,pos.x-1,pos.y))pos.x--;if(e.key==='ArrowRight'&&!collides(cur,pos.x+1,pos.y))pos.x++;if(e.key==='ArrowDown'){while(!collides(cur,pos.x,pos.y+1))pos.y++;merge();clearLines();spawn();}if(e.key==='ArrowUp'){const ro=rotate(cur);if(!collides(ro,pos.x,pos.y))cur=ro;}draw();});
+
+// Polyfill
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){const rv=typeof r==='number'?r:Array.isArray(r)?r[0]:4;this.moveTo(x+rv,y);this.arcTo(x+w,y,x+w,y+h,rv);this.arcTo(x+w,y+h,x,y+h,rv);this.arcTo(x,y+h,x,y,rv);this.arcTo(x,y,x+w,y,rv);this.closePath();};}
+
+// Ready
+window.parent.postMessage({type:'ready'},'*');
+</script>
+</body>
+</html>

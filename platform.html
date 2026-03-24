@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Luckieverse Platform</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:#2c1810;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden;}
+.gc{position:relative;width:375px;height:740px;overflow:hidden;border-radius:20px;box-shadow:0 0 40px rgba(0,0,0,0.5);background:linear-gradient(180deg,#4a3728 0%,#6b5240 15%,#8b7355 30%,#c4a882 50%,#e8d5b5 70%,#f5ecd8 100%);}
+
+/* Header */
+.hdr{position:absolute;top:0;left:0;right:0;padding:12px 16px;z-index:10;background:linear-gradient(180deg,rgba(74,55,40,0.95) 0%,rgba(74,55,40,0.7) 80%,transparent 100%);}
+.hr{display:flex;justify-content:space-between;align-items:center;}
+.hb{background:rgba(0,0,0,0.3);border-radius:12px;padding:6px 14px;text-align:center;}
+.hl{font-size:10px;color:#c4a882;}.hv{font-size:20px;font-weight:800;color:#ffd700;}
+.hv.w{color:#fff;}.hv.warn{color:#ff6b6b;animation:pulse .5s infinite;}
+@keyframes pulse{50%{opacity:.5;}}
+.tb{background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:12px;padding:6px 14px;text-align:center;}
+.pw{margin-top:8px;background:rgba(0,0,0,0.3);border-radius:6px;height:8px;overflow:hidden;}
+.pb{height:100%;background:linear-gradient(90deg,#ffd700,#ffaa00);border-radius:6px;transition:width .3s;}
+
+/* Game iframe */
+#gameFrame{position:absolute;top:96px;left:0;right:0;bottom:0;border:none;width:100%;height:calc(100% - 96px);z-index:1;}
+
+/* Items */
+.items{position:absolute;bottom:16px;left:0;right:0;display:flex;justify-content:center;gap:10px;padding:0 12px;z-index:10;}
+.ibtn{background:rgba(74,55,40,0.9);border:2px solid #c4a882;border-radius:14px;padding:8px 10px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;text-align:center;min-width:75px;transition:all .2s;position:relative;}
+.ibtn:active{transform:scale(.95);}.ibtn.off{opacity:.4;pointer-events:none;}
+.ibtn .ic{font-size:20px;display:block;margin-bottom:2px;}
+.ibtn .nm{display:block;font-size:10px;}
+.ibtn .cnt{position:absolute;top:-6px;right:-6px;background:#ff6b6b;color:#fff;font-size:10px;font-weight:800;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.ibtn .ab{font-size:8px;color:#ffd700;display:block;margin-top:2px;}
+
+/* Overlays */
+.ov{position:absolute;top:0;left:0;right:0;bottom:0;display:none;z-index:100;flex-direction:column;align-items:center;justify-content:center;}
+.ov.show{display:flex;}
+.obg{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);}
+.oc{position:relative;z-index:1;text-align:center;padding:24px;width:100%;}
+.gbtn{padding:14px 40px;border:none;border-radius:50px;font-size:18px;font-weight:800;cursor:pointer;transition:all .2s;}
+.gbtn:active{transform:scale(.95);}
+.bg{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#4a3728;box-shadow:0 4px 15px rgba(255,215,0,0.4);}
+.bgr{background:linear-gradient(135deg,#8bc63f,#6ba52a);color:#fff;}
+.bo{background:transparent;border:2px solid #c4a882;color:#c4a882;padding:12px 32px;font-size:14px;}
+.bs{padding:10px 24px;font-size:14px;}
+.box{border-radius:20px;margin:0 24px;padding:28px 24px;}
+.box-clear{background:linear-gradient(135deg,#2a4a1f,#3d6b2a);border:2px solid #8bc63f;}
+.box-over{background:linear-gradient(135deg,#3d1f1f,#5a2d2d);border:2px solid #ff6b6b;}
+.box-rw{background:linear-gradient(135deg,#4a3728,#6b5240);border:2px solid #c4a882;}
+.box-cp{background:linear-gradient(135deg,#4a3728,#6b5240);border:2px solid #ffd700;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.rwicon{font-size:56px;margin-bottom:8px;animation:bounce .6s ease infinite;}
+.cf{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden;z-index:2;}
+.cfp{position:absolute;width:8px;height:8px;border-radius:2px;animation:cfall linear forwards;}
+@keyframes cfall{0%{transform:translateY(-20px) rotate(0deg);opacity:1;}100%{transform:translateY(740px) rotate(720deg);opacity:0;}}
+
+/* Ad */
+.afs{position:absolute;top:0;left:0;right:0;bottom:0;background:#000;z-index:200;display:none;flex-direction:column;}
+.afs.show{display:flex;}
+.atop{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;position:absolute;top:0;left:0;right:0;z-index:10;background:rgba(0,0,0,.6);}
+.albl{background:rgba(255,255,255,.15);color:#aaa;font-size:10px;padding:3px 8px;border-radius:4px;}
+.askip{background:rgba(255,255,255,.15);color:#fff;font-size:12px;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.3);cursor:pointer;}
+.askip.on{background:rgba(255,255,255,.25);border-color:#fff;}
+.abdg{position:absolute;top:44px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);border:1px solid rgba(255,215,0,.4);border-radius:20px;padding:6px 16px;z-index:10;font-size:11px;color:#ffd700;font-weight:600;}
+.abody{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 24px 120px;position:relative;}
+.abg2{position:absolute;top:0;left:0;right:0;bottom:0;opacity:.3;background:linear-gradient(135deg,#667eea,#764ba2);}
+.aic{font-size:72px;position:relative;z-index:1;margin-bottom:16px;animation:adf 2s ease-in-out infinite;}
+@keyframes adf{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+.at2{font-size:24px;font-weight:800;color:#fff;position:relative;z-index:1;margin-bottom:8px;}
+.ad2{font-size:14px;color:rgba(255,255,255,.8);position:relative;z-index:1;line-height:1.5;margin-bottom:16px;}
+.acta{position:absolute;bottom:60px;left:24px;right:24px;z-index:1;}
+.acta-b{display:block;width:100%;padding:14px;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;color:#fff;background:linear-gradient(135deg,#00b894,#00a381);}
+.abot{position:absolute;bottom:0;left:0;right:0;z-index:10;}
+.apw{height:4px;background:rgba(255,255,255,.15);}.apb{height:100%;background:#ffd700;transition:width .1s linear;}
+.abi{display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:rgba(0,0,0,.8);}
+.abi-l{display:flex;align-items:center;gap:8px;}
+.abi-ic{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;background:linear-gradient(135deg,#667eea,#764ba2);}
+.abi-nm{font-size:11px;color:#aaa;}.abi-r{display:flex;align-items:center;gap:12px;}.atm{font-size:11px;color:#aaa;}
+.no-cfg{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c1810;color:#c4a882;text-align:center;padding:24px;z-index:300;}
+.no-cfg h2{color:#ffd700;margin-bottom:8px;}
+</style>
+</head>
+<body>
+<div class="gc">
+  <div class="no-cfg" id="noCfg" style="display:none;"><h2>설정이 없습니다</h2><p>admin.html에서 게임을 설정하고 저장해주세요.</p></div>
+
+  <!-- Header (플랫폼이 관리) -->
+  <div class="hdr" id="hdr" style="display:none;">
+    <div class="hr">
+      <div class="hb"><div class="hl">SCORE</div><div class="hv" id="dScore">0</div></div>
+      <div class="tb"><div class="hl" id="dTargetLabel">TARGET</div><div class="hv" id="dTarget" style="font-size:14px;font-weight:700;">3,000</div></div>
+      <div class="hb"><div class="hl">TIME</div><div class="hv w" id="dTimer">2:00</div></div>
+    </div>
+    <div class="pw"><div class="pb" id="dProg" style="width:0%"></div></div>
+  </div>
+
+  <!-- Game content (iframe) -->
+  <iframe id="gameFrame" style="display:none;"></iframe>
+
+  <!-- Items: 게임 콘텐츠가 자체 관리, 플랫폼은 광고 재생만 처리 -->
+
+  <!-- Start -->
+  <div class="ov show" id="scrStart">
+    <div class="obg"></div>
+    <div class="oc">
+      <div style="font-size:64px;margin-bottom:12px;">⛏️</div>
+      <div style="font-size:28px;font-weight:900;color:#ffd700;margin-bottom:4px;" id="startTitle">두더지 테트리스</div>
+      <div style="font-size:14px;color:#c4a882;margin-bottom:24px;" id="startDesc"></div>
+      <div style="background:rgba(0,0,0,.3);border-radius:16px;padding:16px;margin:0 24px 24px;text-align:left;color:#e8d5b5;font-size:13px;line-height:1.8;">
+        <strong style="color:#ffd700;">📦 조작:</strong> 좌우 스와이프 이동, 아래 스와이프 드롭, 탭 회전<br>
+        <strong style="color:#ffd700;">💰 보상:</strong> 클리어 시 포인트 획득
+      </div>
+      <button class="gbtn bg" onclick="handleStart()">게임 시작</button>
+    </div>
+  </div>
+
+  <!-- Game Over -->
+  <div class="ov" id="scrOver"><div class="obg"></div><div class="oc">
+    <div class="box box-over">
+      <div style="font-size:56px;margin-bottom:8px;">😢</div>
+      <div style="font-size:22px;font-weight:700;color:#ff6b6b;margin-bottom:8px;">게임 오버</div>
+      <div style="font-size:16px;color:#c4a882;margin-bottom:4px;">점수: <span id="goScore" style="color:#ffd700;font-weight:700;">0</span></div>
+      <div style="font-size:13px;color:#636e72;margin-bottom:16px;">목표에 도달하지 못했습니다</div>
+      <button class="gbtn bg bs" id="goContBtn" onclick="handleContinue()" style="margin-bottom:10px;">💖 컨티뉴 (AD)</button><br>
+      <button class="gbtn bo bs" onclick="handleReset()">다시 도전</button>
+    </div>
+  </div></div>
+
+  <!-- Clear -->
+  <div class="ov" id="scrClear"><div class="obg"></div><div class="oc">
+    <div class="cf" id="cfClear"></div>
+    <div class="box box-clear">
+      <div style="font-size:56px;margin-bottom:8px;">🎉</div>
+      <div style="font-size:24px;font-weight:900;color:#8bc63f;margin-bottom:4px;">클리어!</div>
+      <div style="font-size:16px;color:#c4a882;margin-bottom:16px;">점수: <span id="clrScore" style="color:#ffd700;font-weight:700;">0</span></div>
+      <button class="gbtn bgr bs" onclick="handleRewardFlow()">보상 받기</button>
+    </div>
+  </div></div>
+
+  <!-- Reward -->
+  <div class="ov" id="scrReward"><div class="obg"></div><div class="oc">
+    <div class="cf" id="cfReward"></div>
+    <div class="box box-rw">
+      <div class="rwicon">🎁</div>
+      <div style="font-size:20px;font-weight:700;color:#ffd700;margin-bottom:4px;">보상 획득!</div>
+      <div style="font-size:48px;font-weight:900;color:#ffd700;margin-bottom:4px;" id="rwPts">+3P</div>
+      <div style="font-size:13px;color:#c4a882;margin-bottom:20px;" id="rwDesc"></div>
+      <button class="gbtn bg bs" id="rwUpBtn" onclick="handleUpgradeFlow()" style="margin-bottom:10px;">🎁 보상 업그레이드 (AD)</button><br>
+      <button class="gbtn bo bs" id="rwDoneBtn" onclick="handleComplete()">이대로 받기</button>
+    </div>
+  </div></div>
+
+  <!-- Upgrade -->
+  <div class="ov" id="scrUpgrade"><div class="obg"></div><div class="oc">
+    <div class="cf" id="cfUpgrade"></div>
+    <div class="box box-rw" style="border-color:#ffd700;">
+      <div class="rwicon">✨</div>
+      <div style="font-size:20px;font-weight:700;color:#ffd700;margin-bottom:4px;">보상 업그레이드!</div>
+      <div style="font-size:48px;font-weight:900;color:#ffd700;margin-bottom:4px;" id="upPts">+6P</div>
+      <div style="font-size:13px;color:#c4a882;margin-bottom:20px;" id="upDesc"></div>
+      <button class="gbtn bg bs" onclick="handleComplete()">확인</button>
+    </div>
+  </div></div>
+
+  <!-- Complete -->
+  <div class="ov" id="scrComplete"><div class="obg"></div><div class="oc">
+    <div class="box box-cp">
+      <div style="font-size:56px;margin-bottom:8px;">🏆</div>
+      <div style="font-size:14px;color:#c4a882;margin-bottom:4px;">획득 포인트</div>
+      <div style="font-size:56px;font-weight:900;color:#ffd700;margin-bottom:16px;" id="cpPts">0P</div>
+      <button class="gbtn bg bs" onclick="handleReset()">한 번 더 플레이</button>
+    </div>
+  </div></div>
+
+  <!-- Ad -->
+  <div class="afs" id="adScreen">
+    <div class="atop"><span class="albl">AD</span><button class="askip" id="adSkip" onclick="skipAd()">3초 후 닫기</button></div>
+    <div class="abdg" id="adBadge">시청 완료 시 보상 수령</div>
+    <div class="abody"><div class="abg2"></div>
+      <div class="aic">🏰</div><div class="at2">캐슬 히어로즈</div>
+      <div class="ad2">나만의 왕국을 건설하고<br>영웅들과 함께 모험을 떠나세요!</div>
+      <div style="color:#ffd700;font-size:14px;position:relative;z-index:1;">⭐⭐⭐⭐⭐ 4.8</div>
+      <div class="acta"><button class="acta-b">지금 무료 설치</button></div>
+    </div>
+    <div class="abot"><div class="apw"><div class="apb" id="adProg" style="width:0%"></div></div>
+      <div class="abi"><div class="abi-l"><div class="abi-ic">🏰</div><span class="abi-nm">Castle Heroes Inc.</span></div><div class="abi-r"><span class="atm" id="adTm">0:04</span></div></div></div>
+  </div>
+</div>
+
+<script>
+// ===== CONFIG =====
+let CFG = null;
+function loadConfig(){
+  const r=localStorage.getItem('luckieverse_game_config');
+  if(!r){document.getElementById('noCfg').style.display='flex';return false;}
+  CFG=JSON.parse(r);return true;
+}
+
+// ===== ITEM: 플랫폼은 광고 재생만 중개, 아이템 관리는 게임이 자체 처리 =====
+
+// ===== TIMER (플랫폼이 관리) =====
+let score=0,timeLeft=0,timerIv=null,gameActive=false;
+let earnedPts=0,upgradePts=0;
+
+function startTimer(){
+  const isTime=CFG.clearType==='시간 경과';
+  timeLeft=isTime?(CFG.playDuration||120):(CFG.timeLimit||120);
+  updTimer();
+  timerIv=setInterval(()=>{
+    if(!gameActive)return;
+    timeLeft--;updTimer();updProgress();
+    if(timeLeft<=0){
+      clearInterval(timerIv);
+      if(isTime||score>=(CFG.clearValue||3000)) handleGameClear();
+      else handleGameOver();
+    }
+  },1000);
+}
+function updTimer(){
+  const m=Math.floor(timeLeft/60),s=(timeLeft%60).toString().padStart(2,'0');
+  const el=document.getElementById('dTimer');
+  el.textContent=`${m}:${s}`;el.className='hv w'+(timeLeft<=15?' warn':'');
+}
+function updScore(s){
+  score=s;
+  document.getElementById('dScore').textContent=score.toLocaleString();
+  updProgress();
+}
+function updProgress(){
+  if(CFG.clearType==='시간 경과'){
+    const total=CFG.playDuration||120;
+    document.getElementById('dProg').style.width=Math.min(100,((total-timeLeft)/total)*100)+'%';
+  } else {
+    document.getElementById('dProg').style.width=Math.min(100,(score/(CFG.clearValue||3000))*100)+'%';
+  }
+}
+
+// ===== AD (플랫폼이 관리) =====
+const AD_DUR=4,AD_SKIP=3;let adIv=null;
+function playAd(badge,cb){
+  const s=document.getElementById('adScreen'),sk=document.getElementById('adSkip'),pb=document.getElementById('adProg'),tm=document.getElementById('adTm');
+  document.getElementById('adBadge').textContent=badge;
+  s.classList.add('show');let el=0;sk.textContent=AD_SKIP+'초 후 닫기';sk.classList.remove('on');pb.style.width='0%';
+  window._adCb=cb;
+  adIv=setInterval(()=>{el+=.1;pb.style.width=Math.min(100,(el/AD_DUR)*100)+'%';const rm=Math.max(0,Math.ceil(AD_DUR-el));tm.textContent=`0:${rm.toString().padStart(2,'0')}`;const sr=Math.max(0,Math.ceil(AD_SKIP-el));if(sr>0)sk.textContent=sr+'초 후 닫기';else if(!sk.classList.contains('on')){sk.textContent='✕ 닫기';sk.classList.add('on');}if(el>=AD_DUR){clearInterval(adIv);sk.textContent='✕ 닫기';sk.classList.add('on');}},100);
+}
+function skipAd(){if(!document.getElementById('adSkip').classList.contains('on'))return;clearInterval(adIv);document.getElementById('adScreen').classList.remove('show');if(window._adCb)window._adCb();}
+
+// ===== REWARD CALC (플랫폼이 관리) =====
+function rollReward(type){
+  const isUp=type==='upgrade';
+  const rType=isUp?CFG.upgradeType:CFG.rewardType;
+  if(rType==='fixed')return isUp?(CFG.upgradeFixedVal||6):(CFG.rewardFixedVal||3);
+  const tiers=isUp?CFG.upgradeTiers:CFG.rewardTiers;
+  if(!tiers||!tiers.length)return 1;
+  const rand=Math.random()*100;let acc=0;
+  for(const t of tiers){acc+=t.pct;if(rand<=acc)return t.p;}
+  return tiers[tiers.length-1].p;
+}
+
+// ===== FLOW HANDLERS (플랫폼이 관리) =====
+function handleStart(){
+  if(CFG.adEntry&&CFG.adEntry.on){
+    playAd('시청 완료 시 게임 시작!',()=>beginGame());
+  } else { beginGame(); }
+}
+
+function beginGame(){
+  hideAll();
+  score=0;gameActive=true;earnedPts=0;upgradePts=0;
+  document.getElementById('hdr').style.display='block';
+  const frame=document.getElementById('gameFrame');
+  frame.style.display='block';
+  frame.src=CFG.content||'games/tetris.html';
+  updScore(0);startTimer();
+}
+
+function handleGameOver(){
+  gameActive=false;clearInterval(timerIv);
+  document.getElementById('goScore').textContent=score.toLocaleString();
+  document.getElementById('goContBtn').style.display='inline-block';
+  sendToGame('pause');show('scrOver');
+}
+
+function handleGameClear(){
+  gameActive=false;clearInterval(timerIv);
+  document.getElementById('clrScore').textContent=score.toLocaleString();
+  sendToGame('pause');show('scrClear');confetti('cfClear');
+}
+
+function handleRewardFlow(){
+  hideAll();earnedPts=rollReward('base');
+  if(CFG.adReward&&CFG.adReward.on){
+    playAd('시청 완료 시 보상 수령',()=>showReward());
+  } else { showReward(); }
+}
+function showReward(){
+  document.getElementById('rwPts').textContent='+'+earnedPts+'P';
+  document.getElementById('rwDesc').textContent=CFG.rewardType==='fixed'?'고정 보상이 지급되었습니다':'선물상자에서 '+earnedPts+'P가 나왔습니다!';
+  const hasUp=CFG.adUpgrade&&CFG.adUpgrade.on;
+  document.getElementById('rwUpBtn').style.display=hasUp?'inline-block':'none';
+  document.getElementById('rwDoneBtn').textContent=hasUp?'이대로 받기':'확인';
+  show('scrReward');confetti('cfReward');
+}
+
+function handleUpgradeFlow(){
+  hideAll();
+  playAd('시청 완료 시 보상 업그레이드!',()=>{
+    upgradePts=rollReward('upgrade');
+    const total=earnedPts+upgradePts;
+    document.getElementById('upPts').textContent='+'+total+'P';
+    document.getElementById('upDesc').textContent=earnedPts+'P + 보너스 '+upgradePts+'P = 총 '+total+'P';
+    show('scrUpgrade');confetti('cfUpgrade');
+  });
+}
+
+function handleComplete(){
+  hideAll();
+  document.getElementById('cpPts').textContent=(earnedPts+upgradePts)+'P';
+  show('scrComplete');
+}
+
+function handleReset(){
+  hideAll();hideGameUI();
+  document.getElementById('gameFrame').src='about:blank';
+  loadConfig();applyConfig();show('scrStart');
+}
+
+function handleItemRequest(effect){
+  // 게임이 광고 시청을 요청 → 플랫폼이 광고 재생 → 완료 시 게임에 승인
+  gameActive=false;clearInterval(timerIv);
+  sendToGame('pause');
+  playAd('시청 완료 시 아이템 사용!',()=>{
+    gameActive=true;
+    sendToGame('itemGranted',{effect:effect});
+    sendToGame('resume');
+    startTimer();
+  });
+}
+
+function handleContinue(){
+  hideAll();
+  playAd('시청 완료 시 컨티뉴!',()=>{
+    timeLeft+=20;gameActive=true;
+    document.getElementById('hdr').style.display='block';
+    document.getElementById('gameFrame').style.display='block';
+    sendToGame('continueGranted');
+    startTimer();
+  });
+}
+
+// ===== BRIDGE: 게임 → 플랫폼 (메시지 수신) =====
+window.addEventListener('message',(e)=>{
+  if(!e.data||!e.data.type)return;
+  const d=e.data;
+  switch(d.type){
+    case 'ready': sendToGame('start',{dropSpeed:800}); break;
+    case 'scoreChange': updScore(d.score); break;
+    case 'gameOver': handleGameOver(); break;
+    case 'gameClear': handleGameClear(); break;
+    case 'requestItem': handleItemRequest(d.effect); break;
+    case 'requestContinue': handleContinue(); break;
+  }
+});
+
+// ===== BRIDGE: 플랫폼 → 게임 (메시지 발신) =====
+function sendToGame(type,data){
+  const frame=document.getElementById('gameFrame');
+  if(frame&&frame.contentWindow){
+    frame.contentWindow.postMessage({type,...(data||{})},'*');
+  }
+}
+
+// ===== UI =====
+function hideAll(){document.querySelectorAll('.ov').forEach(o=>o.classList.remove('show'));document.getElementById('adScreen').classList.remove('show');if(adIv)clearInterval(adIv);}
+function hideGameUI(){document.getElementById('hdr').style.display='none';document.getElementById('gameFrame').style.display='none';}
+function show(id){document.getElementById(id).classList.add('show');}
+function confetti(id){const c=document.getElementById(id);c.innerHTML='';const cols=['#ffd700','#ff6b6b','#8bc63f','#3c8dbc','#e07b39','#7b5ea7'];for(let i=0;i<40;i++){const p=document.createElement('div');p.className='cfp';p.style.left=Math.random()*100+'%';p.style.background=cols[Math.floor(Math.random()*cols.length)];p.style.animationDuration=(1.5+Math.random()*2)+'s';p.style.animationDelay=Math.random()*.5+'s';c.appendChild(p);}}
+
+function applyConfig(){
+  document.getElementById('startTitle').textContent=CFG.name||CFG.gameName||'두더지 테트리스';
+  const isTime=CFG.clearType==='시간 경과';
+  const tl=isTime?(CFG.playDuration||120):(CFG.timeLimit||120);
+  if(isTime){
+    document.getElementById('startDesc').textContent=`${tl}초 동안 생존하면 클리어!`;
+    document.getElementById('dTarget').textContent=tl+'초';
+    document.getElementById('dTargetLabel').textContent='SURVIVE';
+  } else {
+    document.getElementById('startDesc').textContent=`목표: ${(CFG.clearValue||3000).toLocaleString()}점 / ${Math.floor(tl/60)}분${tl%60?' '+tl%60+'초':''}`;
+    document.getElementById('dTarget').textContent=(CFG.clearValue||3000).toLocaleString();
+    document.getElementById('dTargetLabel').textContent='TARGET';
+  }
+}
+
+// Init
+if(loadConfig()) applyConfig();
+</script>
+</body>
+</html>

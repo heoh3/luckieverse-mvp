@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Whack-a-Mole</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:linear-gradient(180deg,#8bc63f 0%,#6ba52a 40%,#5a9422 100%);overflow:hidden;touch-action:none;display:flex;align-items:center;justify-content:center;width:100%;height:100vh;}
+.board{position:relative;width:320px;height:420px;}
+
+/* Holes */
+.hole{position:absolute;width:90px;height:50px;cursor:pointer;}
+.hole-dirt{position:absolute;bottom:0;left:0;right:0;height:28px;background:radial-ellipse(ellipse,#6b4226 0%,#8B5E3C 60%,transparent 70%);border-radius:50%;z-index:2;}
+.hole-shadow{position:absolute;bottom:4px;left:5px;right:5px;height:20px;background:rgba(0,0,0,0.3);border-radius:50%;z-index:1;}
+.mole-wrap{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:3;width:60px;height:70px;overflow:hidden;}
+.mole{position:absolute;bottom:-70px;left:0;width:60px;height:70px;display:flex;align-items:center;justify-content:center;font-size:44px;transition:bottom 0.15s ease-out;filter:drop-shadow(0 3px 4px rgba(0,0,0,0.3));}
+.mole.show{bottom:0;}
+.mole.hit{bottom:0;animation:hitShake 0.15s;}
+.mole.gold .mole-emoji{filter:saturate(2) brightness(1.3);}
+@keyframes hitShake{0%,100%{transform:rotate(0);}25%{transform:rotate(-15deg);}75%{transform:rotate(15deg);}}
+
+/* Hit effects */
+.hit-fx{position:absolute;pointer-events:none;z-index:10;font-size:20px;font-weight:900;animation:fxUp 0.7s ease-out forwards;}
+.hit-fx.pts{color:#ffd700;text-shadow:0 2px 4px rgba(0,0,0,0.3);}
+.hit-fx.miss{color:#ff6b6b;font-size:14px;}
+@keyframes fxUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-50px) scale(1.4);}}
+
+/* Combo */
+.combo-display{position:absolute;top:8px;left:50%;transform:translateX(-50%);font-size:18px;font-weight:900;color:#fff;text-shadow:0 2px 6px rgba(0,0,0,0.4);opacity:0;transition:opacity 0.2s;z-index:10;white-space:nowrap;}
+.combo-display.show{opacity:1;animation:comboPop 0.3s ease-out;}
+@keyframes comboPop{0%{transform:translateX(-50%) scale(0.5);}50%{transform:translateX(-50%) scale(1.2);}100%{transform:translateX(-50%) scale(1);}}
+
+/* Hammer cursor */
+.board{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Ctext x='0' y='28' font-size='28'%3E🔨%3C/text%3E%3C/svg%3E") 16 16,pointer;}
+
+/* Items bar (game-managed) */
+.game-items{position:absolute;bottom:8px;left:0;right:0;display:flex;justify-content:center;gap:8px;z-index:10;}
+.gi-btn{background:rgba(74,55,40,0.85);border:2px solid #c4a882;border-radius:12px;padding:6px 10px;color:#fff;font-size:10px;font-weight:700;cursor:pointer;text-align:center;min-width:70px;position:relative;transition:all .15s;}
+.gi-btn:active{transform:scale(.93);}
+.gi-btn.off{opacity:.35;pointer-events:none;}
+.gi-btn .gi-ic{font-size:18px;display:block;}
+.gi-btn .gi-nm{display:block;font-size:9px;margin-top:1px;}
+.gi-btn .gi-cnt{position:absolute;top:-5px;right:-5px;background:#ff6b6b;color:#fff;font-size:9px;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.gi-btn .gi-ab{font-size:7px;color:#ffd700;display:block;margin-top:1px;}
+</style>
+</head>
+<body>
+<div class="board" id="board">
+  <div class="combo-display" id="combo"></div>
+  <div class="game-items" id="itemsBar"></div>
+</div>
+
+<script>
+/**
+ * 순수 게임 콘텐츠 — 두더지 잡기
+ * 인게임 아이템은 게임 자체에서 관리 (기본 제공 분만, 광고 추가는 플랫폼에 요청)
+ */
+
+const HOLES=[
+  {x:10,y:30},{x:115,y:30},{x:220,y:30},
+  {x:10,y:145},{x:115,y:145},{x:220,y:145},
+  {x:10,y:260},{x:115,y:260},{x:220,y:260},
+];
+
+let score=0,active=false,combo=0;
+let spawnIv=null;
+let spawnSpeed=1100,maxMoles=2;
+
+// In-game items (게임이 자체 관리)
+let items={
+  bomb:{name:'폭탄',icon:'💣',free:1,ad:2,fu:0,au:0},
+  time:{name:'시간+15초',icon:'⏰',free:1,ad:1,fu:0,au:0},
+};
+
+// Build holes
+const board=document.getElementById('board');
+const holes=[];
+HOLES.forEach((p,i)=>{
+  const h=document.createElement('div');
+  h.className='hole';h.style.left=p.x+'px';h.style.top=p.y+'px';
+  h.innerHTML=`<div class="hole-shadow"></div><div class="mole-wrap"><div class="mole" id="m${i}"><span class="mole-emoji">🐹</span></div></div><div class="hole-dirt"></div>`;
+  h.addEventListener('touchstart',(e)=>{e.preventDefault();hitMole(i);},{passive:false});
+  h.addEventListener('mousedown',(e)=>{e.preventDefault();hitMole(i);});
+  board.appendChild(h);
+  holes.push({el:h,mole:h.querySelector('.mole'),active:false,timeout:null,isGold:false});
+});
+
+function send(type,data){window.parent.postMessage({type,...(data||{})},'*');}
+
+// Platform messages
+window.addEventListener('message',(e)=>{
+  if(!e.data||!e.data.type)return;
+  switch(e.data.type){
+    case 'start': startGame(); break;
+    case 'pause': pause(); break;
+    case 'resume': resume(); break;
+    case 'itemGranted':
+      // 플랫폼이 광고 시청 완료 후 아이템 승인
+      if(e.data.effect==='bomb') applyBomb();
+      if(e.data.effect==='time') send('scoreChange',{score}); // 시간은 플랫폼이 처리
+      break;
+    case 'continueGranted':
+      combo=0;active=true;
+      spawnIv=setInterval(spawnMole,spawnSpeed);
+      break;
+  }
+});
+
+function startGame(){
+  score=0;combo=0;active=true;
+  items.bomb.fu=0;items.bomb.au=0;
+  items.time.fu=0;items.time.au=0;
+  holes.forEach(h=>{h.mole.classList.remove('show','hit');h.active=false;if(h.timeout)clearTimeout(h.timeout);});
+  send('scoreChange',{score:0});
+  renderItems();
+  spawnIv=setInterval(spawnMole,spawnSpeed);
+}
+
+function pause(){active=false;if(spawnIv)clearInterval(spawnIv);}
+function resume(){active=true;spawnIv=setInterval(spawnMole,spawnSpeed);}
+
+function spawnMole(){
+  if(!active)return;
+  const avail=holes.filter(h=>!h.active);
+  if(avail.length===0||holes.filter(h=>h.active).length>=maxMoles)return;
+  const h=avail[Math.floor(Math.random()*avail.length)];
+  h.isGold=Math.random()<0.08;
+  h.active=true;
+  h.mole.classList.add('show');
+  h.mole.classList.remove('hit');
+  h.mole.querySelector('.mole-emoji').textContent=h.isGold?'⭐':'🐹';
+  h.mole.classList.toggle('gold',h.isGold);
+  h.timeout=setTimeout(()=>{
+    if(h.active){h.mole.classList.remove('show');h.active=false;combo=0;updateCombo();}
+  },1400);
+}
+
+function hitMole(i){
+  if(!active)return;
+  const h=holes[i];
+  if(!h.active){
+    // Miss
+    showFx(i,'MISS!','miss');
+    return;
+  }
+  clearTimeout(h.timeout);
+  const base=h.isGold?300:100;
+  combo++;
+  const mult=combo>=7?4:combo>=5?3:combo>=3?2:1;
+  const pts=base*mult;
+  score+=pts;
+  h.active=false;
+  h.mole.classList.add('hit');
+  setTimeout(()=>h.mole.classList.remove('show','hit'),200);
+  send('scoreChange',{score});
+  showFx(i,'+'+pts,'pts');
+  updateCombo();
+}
+
+function showFx(i,text,cls){
+  const fx=document.createElement('div');
+  fx.className='hit-fx '+cls;fx.textContent=text;
+  fx.style.left=(HOLES[i].x+30)+'px';fx.style.top=(HOLES[i].y-10)+'px';
+  board.appendChild(fx);setTimeout(()=>fx.remove(),700);
+}
+
+function updateCombo(){
+  const el=document.getElementById('combo');
+  if(combo>=3){el.textContent=combo+' COMBO! x'+(combo>=7?4:combo>=5?3:2);el.classList.add('show');}
+  else el.classList.remove('show');
+}
+
+// ===== In-game items (게임 자체 관리) =====
+function iRem(t){const it=items[t];return(it.free-it.fu)+(it.ad-it.au);}
+function iNeedAd(t){return(items[t].free-items[t].fu)<=0;}
+
+function useItem(type){
+  if(!active||iRem(type)<=0)return;
+  if(!iNeedAd(type)){
+    items[type].fu++;
+    if(type==='bomb') applyBomb();
+    if(type==='time') send('scoreChange',{score}); // placeholder, 플랫폼이 시간 관리
+    renderItems();
+  } else {
+    // 플랫폼에 광고 요청
+    send('requestItem',{effect:type});
+  }
+}
+
+function applyBomb(){
+  // 현재 보이는 두더지 전부 잡기
+  let caught=0;
+  holes.forEach(h=>{
+    if(h.active){
+      clearTimeout(h.timeout);
+      h.active=false;h.mole.classList.add('hit');
+      setTimeout(()=>h.mole.classList.remove('show','hit'),200);
+      caught++;
+    }
+  });
+  score+=caught*100;
+  send('scoreChange',{score});
+  renderItems();
+}
+
+function renderItems(){
+  const bar=document.getElementById('itemsBar');
+  bar.innerHTML=Object.entries(items).map(([k,it])=>`
+    <button class="gi-btn ${iRem(k)<=0?'off':''}" onclick="useItem('${k}')">
+      <span class="gi-cnt">${iRem(k)}</span>
+      <span class="gi-ic">${it.icon}</span>
+      <span class="gi-nm">${it.name}</span>
+      <span class="gi-ab">${iNeedAd(k)?'AD':'FREE'}</span>
+    </button>
+  `).join('');
+}
+
+// Polyfill
+if(!CanvasRenderingContext2D.prototype.roundRect){CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){const rv=typeof r==='number'?r:Array.isArray(r)?r[0]:4;this.moveTo(x+rv,y);this.arcTo(x+w,y,x+w,y+h,rv);this.arcTo(x+w,y+h,x,y+h,rv);this.arcTo(x,y+h,x,y,rv);this.arcTo(x,y,x+w,y,rv);this.closePath();};}
+
+send({type:'ready'});
+window.parent.postMessage({type:'ready'},'*');
+</script>
+</body>
+</html>

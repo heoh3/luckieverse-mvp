@@ -7,9 +7,29 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 html,body{width:100%;height:100%;background:transparent;overflow:hidden;touch-action:none;}
-.wrap{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;padding:4px 0;}
+.wrap{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;position:relative;}
+.game-area{display:flex;gap:6px;align-items:flex-start;padding:0 4px;flex:1;}
 canvas#board{display:block;background:rgba(0,0,0,0.15);border-radius:6px;flex-shrink:0;}
+.side-panel{display:flex;flex-direction:column;align-items:center;gap:8px;width:70px;}
 .touch-layer{position:absolute;top:0;left:0;right:0;bottom:50px;z-index:5;}
+
+/* Mole character */
+.mole-mascot{width:60px;text-align:center;transition:all 0.3s;}
+.mole-mascot img{width:56px;height:auto;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));transition:transform 0.2s;}
+.mole-mascot.happy img{animation:mascotBounce 0.4s ease;}
+.mole-mascot .mascot-msg{font-size:9px;font-weight:700;color:#fff;background:rgba(0,0,0,0.4);border-radius:8px;padding:2px 6px;margin-top:3px;white-space:nowrap;}
+@keyframes mascotBounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+
+/* Next piece */
+.next-box{background:rgba(0,0,0,0.2);border-radius:8px;padding:6px;text-align:center;}
+.next-label{font-size:9px;color:#c4a882;margin-bottom:3px;font-weight:600;}
+canvas#nextPiece{display:block;border-radius:4px;}
+
+/* Line clear effect */
+.line-clear-fx{position:absolute;pointer-events:none;z-index:10;display:flex;align-items:center;justify-content:center;gap:4px;animation:lineFx 0.8s ease-out forwards;}
+.line-clear-fx img{width:24px;height:auto;}
+.line-clear-fx span{font-size:14px;font-weight:900;color:#ffd700;text-shadow:0 2px 4px rgba(0,0,0,0.4);}
+@keyframes lineFx{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-40px) scale(1.3);}}
 
 /* Items bar */
 .items-bar{display:flex;justify-content:center;gap:8px;padding:6px 8px;width:100%;flex-shrink:0;}
@@ -24,7 +44,19 @@ canvas#board{display:block;background:rgba(0,0,0,0.15);border-radius:6px;flex-sh
 </head>
 <body>
 <div class="wrap">
-  <canvas id="board"></canvas>
+  <div class="game-area">
+    <canvas id="board"></canvas>
+    <div class="side-panel">
+      <div class="mole-mascot" id="mascot">
+        <img src="assets/mole-bronze.png" id="mascotImg">
+        <div class="mascot-msg" id="mascotMsg">화이팅!</div>
+      </div>
+      <div class="next-box">
+        <div class="next-label">NEXT</div>
+        <canvas id="nextPiece" width="60" height="60"></canvas>
+      </div>
+    </div>
+  </div>
   <div class="touch-layer" id="touchLayer"></div>
   <div class="items-bar" id="itemsBar"></div>
 </div>
@@ -36,7 +68,12 @@ canvas#board{display:block;background:rgba(0,0,0,0.15);border-radius:6px;flex-sh
  * 광고가 필요하면 플랫폼에 requestItem 요청
  */
 
-const COLS=10,ROWS=18,CELL=Math.min(28, Math.floor((window.innerWidth-20)/COLS));
+const COLS=10,ROWS=20;
+const ITEM_BAR_H=50;
+const CELL=Math.min(
+  Math.floor((window.innerWidth-86)/COLS),
+  Math.floor((window.innerHeight-ITEM_BAR_H)/ROWS)
+);
 const BW=COLS*CELL,BH=ROWS*CELL;
 const COLORS=[null,'#e07b39','#4a9e4a','#c9a028','#7b5ea7','#3c8dbc','#cc4444','#8b6914'];
 const PIECES=[[[1,1,1,1]],[[2,0],[2,0],[2,2]],[[0,3],[0,3],[3,3]],[[4,4],[4,4]],[[0,5,5],[5,5,0]],[[6,6,0],[0,6,6]],[[0,7,0],[7,7,7]]];
@@ -48,6 +85,63 @@ cv.width=BW;cv.height=BH;
 let board=[],cur=null,pos={x:0,y:0},nxt=null;
 let score=0,active=false,gIv=null;
 let dropSpeed=800;
+let targetScore=3000;
+
+// Preload mascot images
+const mascotImgs={};
+['mole-bronze.png','mole-silver.png','mole-gold.png'].forEach(f=>{const img=new Image();img.src='assets/'+f;mascotImgs[f]=img;});
+
+const nv=document.getElementById('nextPiece');
+const nx=nv.getContext('2d');
+
+// Mascot: 점수 구간별 캐릭터 변경
+const MASCOT_LEVELS=[
+  {pct:0,  img:'assets/mole-bronze.png',msg:'화이팅!'},
+  {pct:30, img:'assets/mole-bronze.png',msg:'좋아요!'},
+  {pct:60, img:'assets/mole-silver.png',msg:'잘하고있어!'},
+  {pct:80, img:'assets/mole-gold.png',  msg:'거의 다왔어!'},
+  {pct:100,img:'assets/mole-gold.png',  msg:'최고!!'},
+];
+
+function updateMascot(){
+  const pct=Math.min(100,(score/targetScore)*100);
+  let level=MASCOT_LEVELS[0];
+  for(const l of MASCOT_LEVELS){if(pct>=l.pct)level=l;}
+  const img=document.getElementById('mascotImg');
+  const msg=document.getElementById('mascotMsg');
+  if(img.src.indexOf(level.img)===-1) img.src=level.img;
+  msg.textContent=level.msg;
+}
+
+function mascotCelebrate(){
+  const m=document.getElementById('mascot');
+  m.classList.add('happy');
+  setTimeout(()=>m.classList.remove('happy'),400);
+}
+
+function drawNextPiece(){
+  nx.clearRect(0,0,60,60);
+  if(!nxt)return;
+  const s=14;
+  const ox=(4-nxt[0].length)/2,oy=(4-nxt.length)/2;
+  for(let r=0;r<nxt.length;r++)for(let c=0;c<nxt[r].length;c++)if(nxt[r][c]){
+    const p=(ox+c)*s+2,q=(oy+r)*s+2;
+    nx.fillStyle=COLORS[nxt[r][c]];nx.beginPath();nx.roundRect(p,q,s-2,s-2,3);nx.fill();
+  }
+}
+
+function showLineClearFx(row, count){
+  const wrap=document.querySelector('.game-area');
+  const fx=document.createElement('div');
+  fx.className='line-clear-fx';
+  const moleImg=score/targetScore>=0.6?'assets/mole-gold.png':score/targetScore>=0.3?'assets/mole-silver.png':'assets/mole-bronze.png';
+  fx.innerHTML=`<img src="${moleImg}"><span>+${[0,100,300,700,1500][count]||1500}</span>`;
+  fx.style.position='absolute';
+  fx.style.left='50%';fx.style.transform='translateX(-50%)';
+  fx.style.top=(row*CELL)+'px';
+  wrap.appendChild(fx);
+  setTimeout(()=>fx.remove(),800);
+}
 
 // ===== In-game items (게임 자체 관리) =====
 let items={
@@ -127,7 +221,7 @@ function startGame(){
   score=0;active=true;
   items.clear.fu=0;items.clear.au=0;
   items.time.fu=0;items.time.au=0;
-  renderItems();
+  renderItems();updateMascot();
   spawn();draw();
   gIv=setInterval(tick,dropSpeed);
   send('scoreChange',{score:0});
@@ -164,13 +258,20 @@ function rotate(p){const r=p.length,c=p[0].length,n=Array.from({length:c},()=>Ar
 function collides(p,px,py){for(let r=0;r<p.length;r++)for(let c=0;c<p[r].length;c++){if(!p[r][c])continue;const nx=px+c,ny=py+r;if(nx<0||nx>=COLS||ny>=ROWS)return true;if(ny>=0&&board[ny][nx])return true;}return false;}
 function merge(){for(let r=0;r<cur.length;r++)for(let c=0;c<cur[r].length;c++)if(cur[r][c]){const ny=pos.y+r;if(ny>=0)board[ny][pos.x+c]=cur[r][c];}}
 function clearLines(){
-  let cl=0;
-  for(let r=ROWS-1;r>=0;r--){if(board[r].every(c=>c!==0)){board.splice(r,1);board.unshift(Array(COLS).fill(0));cl++;r++;}}
-  if(cl>0){score+=[0,100,300,700,1500][cl]||1500;send('scoreChange',{score});}
+  let cl=0;let firstRow=ROWS;
+  for(let r=ROWS-1;r>=0;r--){if(board[r].every(c=>c!==0)){if(r<firstRow)firstRow=r;board.splice(r,1);board.unshift(Array(COLS).fill(0));cl++;r++;}}
+  if(cl>0){
+    score+=[0,100,300,700,1500][cl]||1500;
+    send('scoreChange',{score});
+    updateMascot();
+    mascotCelebrate();
+    showLineClearFx(firstRow,cl);
+  }
 }
 function spawn(){
   cur=nxt||rndPiece();nxt=rndPiece();
   pos={x:Math.floor((COLS-cur[0].length)/2),y:-1};
+  drawNextPiece();
   if(collides(cur,pos.x,pos.y)){active=false;clearInterval(gIv);send('gameOver');}
 }
 

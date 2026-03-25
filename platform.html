@@ -271,7 +271,7 @@ function beginGame(){
   document.getElementById('hdr').style.display='block';
   const frame=document.getElementById('gameFrame');
   frame.style.display='block';
-  frame.src=CFG.content||'games/tetris.html';
+  frame.src=(CFG.content||'games/tetris.html')+'?t='+Date.now();
   updScore(0);startTimer();
 }
 

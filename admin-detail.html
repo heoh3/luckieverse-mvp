@@ -128,9 +128,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="card">
     <div class="card-title"><span class="num">1</span>PLAY 스텝 — 게임 플레이</div>
     <div class="row">
-      <div class="field"><label>게임명</label><input type="text" id="gameName"></div>
+      <div class="field"><label>게임명</label><input type="text" id="gameName" minlength="2" maxlength="20" placeholder="2~20자"><div class="hint">유저에게 노출되는 게임 타이틀 (2~20자)</div></div>
       <div class="field"><label>게임 콘텐츠</label>
-        <select id="gameContent"><option value="games/balloon-pop.html">풍선 터뜨리기</option><option value="games/whack-a-mole.html">두더지 잡기</option><option value="games/tetris.html">테트리스 퍼즐</option></select>
+        <select id="gameContent"><option value="games/balloon-pop.html">풍선 터뜨리기</option><option value="games/fruit-slicer.html">과일 슬라이서</option></select>
       </div>
     </div>
     <div class="row">
@@ -151,22 +151,26 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="ad-setting">
       <div class="ad-setting-title">진입 권한형 — PLAY 앞</div>
       <div class="toggle-row"><label class="toggle"><input type="checkbox" id="adEntryOn"><span class="toggle-slider"></span></label><span class="toggle-label">게임 시작 전 광고</span></div>
+      <div class="hint">광고 타입: 리워드 비디오 (30초 이상)</div>
     </div>
     <div class="ad-setting">
       <div class="ad-setting-title">보상 수령형 — REWARD 앞</div>
       <div class="toggle-row"><label class="toggle"><input type="checkbox" id="adRewardOn" checked><span class="toggle-slider"></span></label><span class="toggle-label">보상 수령 전 광고</span></div>
+      <div class="hint">광고 타입: 전면 광고 (클릭 유도형)</div>
     </div>
     <div class="ad-setting">
       <div class="ad-setting-title">보상 업그레이드형 — REWARD 뒤</div>
       <div class="toggle-row"><label class="toggle"><input type="checkbox" id="adUpgradeOn" checked><span class="toggle-slider"></span></label><span class="toggle-label">보상 업그레이드 광고</span></div>
+      <div class="hint">광고 타입: 전면 광고 (클릭 유도형)</div>
     </div>
     <div class="ad-setting">
       <div class="ad-setting-title">리플레이형 — 게임 실패 시</div>
       <div class="toggle-row"><label class="toggle"><input type="checkbox" id="adReplayOn" checked><span class="toggle-slider"></span></label><span class="toggle-label">광고 시청 후 리플레이 (컨티뉴)</span></div>
+      <div class="hint">광고 타입: 전면 광고 (짧은 형태)</div>
       <div id="adReplayFields">
         <div class="row">
-          <div class="field"><label>리플레이 가능 횟수</label><input type="number" id="replayCount" value="1" min="0" max="5"><div class="hint">게임당 광고 시청으로 리플레이 가능한 최대 횟수</div></div>
-          <div class="field"><label>추가 시간 (초)</label><input type="number" id="replayTime" value="20" min="5" step="5"><div class="hint">리플레이 시 추가되는 시간</div></div>
+          <div class="field"><label>리플레이 가능 횟수</label><input type="number" id="replayCount" value="1" min="0" max="5" onblur="clamp(this)"><div class="hint">게임당 광고 시청으로 리플레이 가능한 최대 횟수</div></div>
+          <div class="field"><label>추가 시간 (초)</label><input type="number" id="replayTime" value="20" min="5" max="60" step="5" onblur="clamp(this)"><div class="hint">리플레이 시 추가되는 시간</div></div>
         </div>
       </div>
     </div>
@@ -178,7 +182,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="row"><div class="field"><label>보상 방식</label>
       <select id="rewardType" onchange="onRewardTypeChange()"><option value="fixed">직접 포인트 (고정)</option><option value="random" selected>선물상자 (확률)</option></select>
     </div></div>
-    <div id="rewardFixed" style="display:none;"><div class="row"><div class="field"><label>포인트</label><input type="number" id="rewardFixedVal" value="3" min="1"></div></div></div>
+    <div id="rewardFixed" style="display:none;"><div class="row"><div class="field"><label>포인트</label><input type="number" id="rewardFixedVal" value="1" min="0" max="50" onblur="clamp(this)"></div></div></div>
     <div id="rewardRandom">
       <label style="font-size:11px;font-weight:600;color:#868e96;margin-bottom:4px;display:block;">포인트별 확률</label>
       <div id="rewardTiers"></div>
@@ -190,7 +194,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <div class="row"><div class="field"><label>방식</label>
         <select id="upgradeType" onchange="onUpgradeTypeChange()"><option value="fixed">직접 포인트 (고정)</option><option value="random" selected>선물상자 (확률)</option></select>
       </div></div>
-      <div id="upgradeFixed" style="display:none;"><div class="row"><div class="field"><label>포인트</label><input type="number" id="upgradeFixedVal" value="6" min="1"></div></div></div>
+      <div id="upgradeFixed" style="display:none;"><div class="row"><div class="field"><label>포인트</label><input type="number" id="upgradeFixedVal" value="6" min="0" max="50" onblur="clamp(this)"></div></div></div>
       <div id="upgradeRandom"><div id="upgradeTiers"></div><button class="prob-add" onclick="addUTier()">+ 구간 추가</button><div class="prob-total" id="upgradeTotal"></div></div>
     </div>
   </div>
@@ -201,12 +205,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
     <div class="section-divider">리워드 프리퀀시</div>
     <div class="row">
-      <div class="field"><label>연속 보상 가능 횟수</label><input type="number" id="rewardBurst" value="3" min="1"><div class="hint">한 번에 연속으로 보상 받을 수 있는 횟수</div></div>
-      <div class="field"><label>쿨다운 시간 (시간)</label><input type="number" id="rewardCooldown" value="2" min="0" step="0.5"><div class="hint">연속 보상 소진 후 대기 시간</div></div>
+      <div class="field"><label>연속 보상 가능 횟수</label><input type="number" id="rewardBurst" value="3" min="1" max="20" onblur="clamp(this)"><div class="hint">한 번에 연속으로 보상 받을 수 있는 횟수</div></div>
+      <div class="field"><label>쿨다운 시간 (시간)</label><input type="number" id="rewardCooldown" value="2" min="0" max="24" step="0.5" onblur="clamp(this)"><div class="hint">연속 보상 소진 후 대기 시간</div></div>
     </div>
     <div class="row">
-      <div class="field"><label>일일 보상 횟수 한도</label><input type="number" id="dailyRewards" value="5" min="1"><div class="hint">하루 최대 보상 받을 수 있는 횟수</div></div>
-      <div class="field"><label>일일 포인트 한도</label><input type="number" id="dailyPoints" value="15" min="1"><div class="hint">하루 최대 지급 포인트</div></div>
+      <div class="field"><label>일일 보상 횟수 한도</label><input type="number" id="dailyRewards" value="5" min="1" max="30" onblur="clamp(this)"><div class="hint">하루 최대 보상 받을 수 있는 횟수</div></div>
+      <div class="field"><label>일일 포인트 한도</label><input type="number" id="dailyPoints" value="15" min="1" max="50" onblur="clamp(this)"><div class="hint">하루 최대 지급 포인트</div></div>
     </div>
 
     <div class="section-divider">게임 플레이</div>
@@ -334,6 +338,15 @@ function preview(){
 }
 
 function save(){
+  const nameVal=document.getElementById('gameName').value.trim();
+  if(nameVal.length<2||nameVal.length>20){
+    const el=document.getElementById('gameName');
+    el.style.borderColor='#fa5252';
+    el.focus();
+    alert('게임명은 2~20자로 입력해주세요.');
+    setTimeout(()=>el.style.borderColor='',2000);
+    return;
+  }
   const games=loadGames();const idx=games.findIndex(g=>g.id===gameId);if(idx<0)return;
   games[idx]={...games[idx],name:document.getElementById('gameName').value,content:document.getElementById('gameContent').value,clearType:document.getElementById('clearType').value,clearValue:parseInt(document.getElementById('clearValue').value)||3000,timeLimit:parseInt(document.getElementById('timeLimit').value)||120,playDuration:parseInt(document.getElementById('playDuration').value)||120,adEntry:{on:document.getElementById('adEntryOn').checked},adReward:{on:document.getElementById('adRewardOn').checked},adUpgrade:{on:document.getElementById('adUpgradeOn').checked},adReplay:{on:document.getElementById('adReplayOn').checked,count:parseInt(document.getElementById('replayCount').value)||1,time:parseInt(document.getElementById('replayTime').value)||20},rewardType:document.getElementById('rewardType').value,rewardFixedVal:parseInt(document.getElementById('rewardFixedVal').value)||3,rewardTiers:rT,upgradeType:document.getElementById('upgradeType').value,upgradeFixedVal:parseInt(document.getElementById('upgradeFixedVal').value)||6,upgradeTiers:uT,rewardBurst:parseInt(document.getElementById('rewardBurst').value)||3,rewardCooldown:parseFloat(document.getElementById('rewardCooldown').value)||2,dailyRewards:parseInt(document.getElementById('dailyRewards').value)||5,dailyPoints:parseInt(document.getElementById('dailyPoints').value)||15,freePlay:document.getElementById('freePlayOn').checked,dailyPlayLimit:parseInt(document.getElementById('dailyPlayLimit').value)||0};
   saveGames(games);

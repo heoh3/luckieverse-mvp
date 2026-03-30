@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Fruit Slicer</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{background:linear-gradient(180deg,#87CEEB 0%,#98D8C8 60%,#B5EAD7 100%);overflow:hidden;touch-action:none;width:100%;height:100vh;position:relative;}
+canvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:5;pointer-events:none;}
+.legend{
+  position:absolute;top:10px;left:10px;z-index:30;
+  display:flex;flex-direction:column;gap:5px;
+  padding:10px 12px;border-radius:16px;
+  background:rgba(0,0,0,0.35);
+  border:1px solid rgba(255,255,255,0.15);
+  color:#fff;pointer-events:none;
+}
+.legend-title{font-size:10px;font-weight:800;letter-spacing:.08em;color:#ffd700;margin-bottom:2px;}
+.legend-row{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;}
+.legend-dot{font-size:14px;line-height:1;}
+.fruit{position:absolute;user-select:none;z-index:3;display:flex;align-items:center;justify-content:center;border-radius:50%;pointer-events:auto;cursor:pointer;}
+.fruit .bg{position:absolute;width:100%;height:100%;border-radius:50%;box-shadow:0 4px 10px rgba(0,0,0,0.2);}
+.fruit .emoji{position:relative;z-index:1;line-height:1;}
+.fx{position:absolute;pointer-events:none;z-index:20;font-size:24px;font-weight:900;text-shadow:0 2px 8px rgba(0,0,0,0.3);animation:fxUp 0.8s ease-out forwards;}
+@keyframes fxUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-70px) scale(1.6);}}
+.slice-area{position:absolute;top:0;left:0;right:0;bottom:0;z-index:4;}
+</style>
+</head>
+<body>
+<div class="slice-area" id="sliceArea"></div>
+<canvas id="c"></canvas>
+<div class="legend">
+  <div class="legend-title">FRUIT SCORE</div>
+  <div class="legend-row"><span class="legend-dot">🍉</span><span>수박 300점</span></div>
+  <div class="legend-row"><span class="legend-dot">🍊</span><span>오렌지 200점</span></div>
+  <div class="legend-row"><span class="legend-dot">🍎</span><span>사과 150점</span></div>
+  <div class="legend-row"><span class="legend-dot">🍋</span><span>레몬 100점</span></div>
+  <div class="legend-row"><span class="legend-dot">💣</span><span>폭탄 -200점</span></div>
+</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const sliceArea=document.getElementById('sliceArea');
+
+const FRUITS=[
+  {emoji:'🍉',score:300,chance:0.10,size:76,bg:'rgba(255,255,255,0.6)'},
+  {emoji:'🍊',score:200,chance:0.20,size:68,bg:'rgba(255,255,255,0.6)'},
+  {emoji:'🍎',score:150,chance:0.30,size:64,bg:'rgba(255,255,255,0.6)'},
+  {emoji:'🍋',score:100,chance:0.40,size:60,bg:'rgba(255,255,255,0.6)'},
+];
+const BOMB={emoji:'💣',score:-200,size:60,bg:'rgba(60,60,60,0.6)',isBomb:true};
+
+let W,H,dpr;
+function resize(){
+  dpr=window.devicePixelRatio||1;
+  W=window.innerWidth;H=window.innerHeight;
+  canvas.width=W*dpr;canvas.height=H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+resize();
+window.addEventListener('resize',resize);
+
+let score=0,active=false;
+let fruits=[],trails=[],spawnIv=null,raf=null;
+
+function send(type,data){window.parent.postMessage({type,...(data||{})},'*');}
+window.addEventListener('message',e=>{
+  if(!e.data||!e.data.type)return;
+  switch(e.data.type){
+    case 'start': startGame(); break;
+    case 'pause': active=false; break;
+    case 'resume': active=true; if(!raf)raf=requestAnimationFrame(loop); break;
+    case 'continueGranted': active=true; startSpawn(); if(!raf)raf=requestAnimationFrame(loop); break;
+  }
+});
+send('ready');
+
+function pickType(){
+  if(Math.random()<0.12)return BOMB;
+  const r=Math.random();let acc=0;
+  for(const f of FRUITS){acc+=f.chance;if(r<=acc)return f;}
+  return FRUITS[FRUITS.length-1];
+}
+
+function spawnFruit(){
+  if(!active)return;
+  const type=pickType();
+  const x=Math.random()*(W-type.size-24)+12;
+  const el=document.createElement('div');
+  el.className='fruit';
+  el.style.width=type.size+'px';el.style.height=type.size+'px';
+  el.innerHTML=`<div class="bg" style="background:${type.bg}"></div><span class="emoji" style="font-size:${type.size*0.6}px">${type.emoji}</span>`;
+  el.style.left=x+'px';el.style.top=(H+20)+'px';
+  document.body.appendChild(el);
+  const b={
+    el,type,x,y:H+20,
+    vy:-(14+Math.random()*5),
+    vx:(Math.random()-0.5)*3,
+    sliced:false,alpha:1
+  };
+  fruits.push(b);
+}
+
+function startSpawn(){
+  if(spawnIv)clearInterval(spawnIv);
+  spawnIv=setInterval(spawnFruit,500);
+  for(let i=0;i<3;i++)setTimeout(spawnFruit,i*150);
+}
+
+const GRAVITY=0.4;
+
+function loop(){
+  if(!active){raf=null;return;}
+  // canvas: 트레일만
+  ctx.clearRect(0,0,W,H);
+  trails=trails.filter(t=>t.alpha>0);
+  for(const t of trails){
+    ctx.beginPath();
+    ctx.moveTo(t.x1,t.y1);ctx.lineTo(t.x2,t.y2);
+    ctx.strokeStyle=`rgba(255,255,255,${t.alpha})`;
+    ctx.lineWidth=t.alpha*6;ctx.lineCap='round';
+    ctx.shadowColor='rgba(255,255,255,0.5)';ctx.shadowBlur=t.alpha*8;
+    ctx.stroke();
+    ctx.shadowBlur=0;
+    t.alpha-=0.06;
+  }
+
+  // DOM 과일 이동
+  const dead=[];
+  for(const f of fruits){
+    if(f.sliced){f.alpha-=0.08;f.el.style.opacity=f.alpha;if(f.alpha<=0){f.el.remove();dead.push(f);continue;}}
+    f.y+=f.vy;f.x+=f.vx;f.vy+=GRAVITY;
+    f.el.style.top=f.y+'px';f.el.style.left=f.x+'px';
+    if(f.y>H+100){f.el.remove();dead.push(f);}
+  }
+  fruits=fruits.filter(f=>!dead.includes(f));
+
+  raf=requestAnimationFrame(loop);
+}
+
+function sliceFruit(f){
+  if(f.sliced)return;
+  f.sliced=true;
+  const cx=f.x+f.type.size/2;
+  const cy=f.y+f.type.size/2;
+  score+=f.type.score;
+  if(score<0)score=0;
+  send('scoreChange',{score});
+  // fx
+  const fx=document.createElement('div');
+  fx.className='fx';
+  fx.textContent=f.type.isBomb?'💥 -200':'+'+f.type.score;
+  fx.style.cssText=`left:${cx-30}px;top:${cy-16}px;color:${f.type.isBomb?'#ff4757':'#ffd700'};`;
+  document.body.appendChild(fx);
+  setTimeout(()=>fx.remove(),800);
+}
+
+// 슬라이스 판정: 선분과 과일 원 교차
+function checkSlice(x1,y1,x2,y2){
+  for(const f of fruits){
+    if(f.sliced)continue;
+    const cx=f.x+f.type.size/2,cy=f.y+f.type.size/2,r=f.type.size/2;
+    const dx=x2-x1,dy=y2-y1;
+    const fx2=cx-x1,fy2=cy-y1;
+    const len2=dx*dx+dy*dy;
+    if(len2===0)continue;
+    const t=Math.max(0,Math.min(1,(fx2*dx+fy2*dy)/len2));
+    const px=x1+t*dx-cx,py=y1+t*dy-cy;
+    if(px*px+py*py<=r*r) sliceFruit(f);
+  }
+}
+
+// 터치/마우스
+let prevPos=null;
+function onMove(x,y){
+  if(!active)return;
+  if(prevPos){
+    const dx=x-prevPos.x,dy=y-prevPos.y;
+    if(dx*dx+dy*dy>12){
+      trails.push({x1:prevPos.x,y1:prevPos.y,x2:x,y2:y,alpha:0.9});
+      checkSlice(prevPos.x,prevPos.y,x,y);
+    }
+  }
+  prevPos={x,y};
+}
+sliceArea.addEventListener('touchstart',e=>{e.preventDefault();const t=e.touches[0];prevPos={x:t.clientX,y:t.clientY};},{passive:false});
+sliceArea.addEventListener('touchmove',e=>{e.preventDefault();const t=e.touches[0];onMove(t.clientX,t.clientY);},{passive:false});
+sliceArea.addEventListener('touchend',e=>{e.preventDefault();prevPos=null;},{passive:false});
+sliceArea.addEventListener('mousedown',e=>{prevPos={x:e.clientX,y:e.clientY};});
+sliceArea.addEventListener('mousemove',e=>{if(e.buttons)onMove(e.clientX,e.clientY);});
+sliceArea.addEventListener('mouseup',()=>prevPos=null);
+
+function startGame(){
+  score=0;active=true;
+  fruits.forEach(f=>f.el.remove());fruits=[];trails=[];
+  send('scoreChange',{score:0});
+  startSpawn();
+  if(raf)cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

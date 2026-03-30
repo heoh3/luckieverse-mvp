@@ -236,16 +236,16 @@ body{
 
   <!-- Ad -->
   <div class="afs" id="adScreen">
-    <div class="atop"><span class="albl">AD</span><button class="askip" id="adSkip" onclick="skipAd()">3초 후 닫기</button></div>
+    <div class="atop"><span class="albl" id="adTypeLbl">AD</span><button class="askip" id="adSkip" onclick="skipAd()">3초 후 닫기</button></div>
     <div class="abdg" id="adBadge">시청 완료 시 보상 수령</div>
     <div class="abody"><div class="abg2"></div>
-      <div class="aic">🏰</div><div class="at2">캐슬 히어로즈</div>
-      <div class="ad2">나만의 왕국을 건설하고<br>영웅들과 함께 모험을 떠나세요!</div>
-      <div style="color:#ffd700;font-size:14px;position:relative;z-index:1;">⭐⭐⭐⭐⭐ 4.8</div>
-      <div class="acta"><button class="acta-b">지금 무료 설치</button></div>
+      <div class="aic" id="adBodyIcon">🎬</div>
+      <div class="at2" id="adBodyTitle">광고</div>
+      <div class="ad2" id="adBodyDesc">잠시 후 계속됩니다</div>
+      <div class="acta"><button class="acta-b" id="adBodyCta" style="display:none;">바로 가기</button></div>
     </div>
-    <div class="abot"><div class="apw"><div class="apb" id="adProg" style="width:0%"></div></div>
-      <div class="abi"><div class="abi-l"><div class="abi-ic">🏰</div><span class="abi-nm">Castle Heroes Inc.</span></div><div class="abi-r"><span class="atm" id="adTm">0:04</span></div></div></div>
+    <div class="abot"><div class="apw"><div class="apb" id="adProg" style="width:0%;"><div id="adProgBar" style="height:100%;background:#ffd700;border-radius:inherit;transition:width .1s linear;width:100%;"></div></div></div>
+      <div class="abi"><div class="abi-l"><div class="abi-ic" id="adBodyIconSm">🎬</div><span class="abi-nm" id="adTypeLbl2">리워드 비디오</span></div><div class="abi-r"><span class="atm" id="adTm">0:10</span></div></div></div>
   </div>
 </div>
 
@@ -298,13 +298,29 @@ function updProgress(){
 }
 
 // ===== AD (플랫폼이 관리) =====
-const AD_DUR=4,AD_SKIP=3;let adIv=null;
-function playAd(badge,cb){
+// adType: 'video'(리워드 비디오, 진입 권한형), 'interstitial'(전면 광고, 보상형), 'short'(짧은 전면 광고, 리플레이형)
+const AD_CFG={
+  video:       {dur:10, skip:5,  label:'리워드 비디오', barColor:'#ff6b6b', icon:'🎬', title:'모바일 게임 광고', desc:'게임을 끝까지 시청하시면\n포인트를 받을 수 있어요!', cta:null},
+  interstitial:{dur:5,  skip:3,  label:'전면 광고',     barColor:'#339af0', icon:'🛍️', title:'럭키버스 쇼핑',   desc:'지금 바로 쿠폰을 받고\n특가 상품을 확인하세요!', cta:'지금 확인하기'},
+  short:       {dur:3,  skip:2,  label:'전면 광고',     barColor:'#ff9f43', icon:'⚡', title:'빠른 광고',       desc:'잠깐! 이 혜택을 놓치지 마세요.', cta:'바로 가기'},
+};
+let adIv=null;
+function playAd(badge,cb,adType='interstitial'){
+  const cfg=AD_CFG[adType]||AD_CFG.interstitial;
   const s=document.getElementById('adScreen'),sk=document.getElementById('adSkip'),pb=document.getElementById('adProg'),tm=document.getElementById('adTm');
   document.getElementById('adBadge').textContent=badge;
-  s.classList.add('show');let el=0;sk.textContent=AD_SKIP+'초 후 닫기';sk.classList.remove('on');pb.style.width='0%';
+  document.getElementById('adTypeLbl').textContent=cfg.label;
+  document.getElementById('adTypeLbl2').textContent=cfg.label;
+  document.getElementById('adProgBar').style.background=cfg.barColor;
+  document.getElementById('adBodyIcon').textContent=cfg.icon;
+  document.getElementById('adBodyIconSm').textContent=cfg.icon;
+  document.getElementById('adBodyTitle').textContent=cfg.title;
+  document.getElementById('adBodyDesc').textContent=cfg.desc;
+  const ctaEl=document.getElementById('adBodyCta');
+  if(cfg.cta){ctaEl.textContent=cfg.cta;ctaEl.style.display='block';}else{ctaEl.style.display='none';}
+  s.classList.add('show');let el=0;sk.textContent=cfg.skip+'초 후 닫기';sk.classList.remove('on');pb.style.width='0%';
   window._adCb=cb;
-  adIv=setInterval(()=>{el+=.1;pb.style.width=Math.min(100,(el/AD_DUR)*100)+'%';const rm=Math.max(0,Math.ceil(AD_DUR-el));tm.textContent=`0:${rm.toString().padStart(2,'0')}`;const sr=Math.max(0,Math.ceil(AD_SKIP-el));if(sr>0)sk.textContent=sr+'초 후 닫기';else if(!sk.classList.contains('on')){sk.textContent='✕ 닫기';sk.classList.add('on');}if(el>=AD_DUR){clearInterval(adIv);sk.textContent='✕ 닫기';sk.classList.add('on');}},100);
+  adIv=setInterval(()=>{el+=.1;pb.style.width=Math.min(100,(el/cfg.dur)*100)+'%';const rm=Math.max(0,Math.ceil(cfg.dur-el));tm.textContent=`0:${rm.toString().padStart(2,'0')}`;const sr=Math.max(0,Math.ceil(cfg.skip-el));if(sr>0)sk.textContent=sr+'초 후 닫기';else if(!sk.classList.contains('on')){sk.textContent='✕ 닫기';sk.classList.add('on');}if(el>=cfg.dur){clearInterval(adIv);sk.textContent='✕ 닫기';sk.classList.add('on');}},100);
 }
 function skipAd(){if(!document.getElementById('adSkip').classList.contains('on'))return;clearInterval(adIv);document.getElementById('adScreen').classList.remove('show');if(window._adCb)window._adCb();}
 
@@ -323,7 +339,7 @@ function rollReward(type){
 // ===== FLOW HANDLERS (플랫폼이 관리) =====
 function handleStart(){
   if(CFG.adEntry&&CFG.adEntry.on){
-    playAd('시청 완료 시 게임 시작!',()=>beginGame());
+    playAd('시청 완료 시 게임 시작!',()=>beginGame(),'video');
   } else { beginGame(); }
 }
 
@@ -353,7 +369,7 @@ function handleGameClear(){
 function handleRewardFlow(){
   hideAll();earnedPts=rollReward('base');
   if(CFG.adReward&&CFG.adReward.on){
-    playAd('시청 완료 시 보상 수령',()=>showReward());
+    playAd('시청 완료 시 보상 수령',()=>showReward(),'interstitial');
   } else { showReward(); }
 }
 function showReward(){
@@ -373,7 +389,7 @@ function handleUpgradeFlow(){
     document.getElementById('upPts').textContent='+'+total+'P';
     document.getElementById('upDesc').textContent=earnedPts+'P + 보너스 '+upgradePts+'P = 총 '+total+'P';
     show('scrUpgrade');confetti('cfUpgrade');
-  });
+  },'interstitial');
 }
 
 function handleComplete(){
@@ -403,12 +419,12 @@ function handleItemRequest(effect){
 function handleContinue(){
   hideAll();
   playAd('시청 완료 시 컨티뉴!',()=>{
-    timeLeft+=20;gameActive=true;
+    timeLeft+=(CFG.adReplay?.time||20);gameActive=true;
     document.getElementById('hdr').style.display='block';
     document.getElementById('gameFrame').style.display='block';
     sendToGame('continueGranted');
     startTimer();
-  });
+  },'short');
 }
 
 // ===== BRIDGE: 게임 → 플랫폼 (메시지 수신) =====
@@ -462,6 +478,30 @@ function getGamePresentation(content){
         cardBorder:'#c4ecff',
         progressBg:'linear-gradient(90deg,#ffe066,#ff9f43)',
         startArt:'radial-gradient(circle at 18% 22%, rgba(255,255,255,0.45), transparent 18%), radial-gradient(circle at 78% 16%, rgba(255,255,255,0.38), transparent 16%), linear-gradient(180deg, rgba(255,255,255,0.08), transparent 40%), radial-gradient(circle at 50% 100%, rgba(255,228,148,0.24), transparent 24%)'
+      }
+    };
+  }
+  if(path.includes('fruit')){
+    return {
+      icon:'🍉',
+      controls:'화면을 스와이프해서 날아오는 과일 베기 (폭탄은 피하기!)',
+      reward:'클리어 시 포인트 획득',
+      theme:{
+        pageBg:'#87CEEB',
+        shellBg:'linear-gradient(180deg,#87CEEB 0%,#98D8C8 60%,#B5EAD7 100%)',
+        shellOverlay:'radial-gradient(circle at 20% 15%, rgba(255,255,255,0.3), transparent 22%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.2), transparent 18%)',
+        headerBg:'linear-gradient(180deg,rgba(30,100,130,0.92) 0%,rgba(30,100,130,0.65) 80%,transparent 100%)',
+        panelBg:'rgba(0,80,100,0.25)',
+        panelText:'#e0f4f0',
+        muted:'#b5e8dd',
+        value:'#ffd700',
+        buttonBg:'linear-gradient(135deg,#ff9f43,#e65c00)',
+        buttonText:'#fff',
+        outline:'#88ddcc',
+        cardBg:'rgba(0,80,110,0.35)',
+        cardBorder:'#66ccbb',
+        progressBg:'linear-gradient(90deg,#ff9f43,#e65c00)',
+        startArt:'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.3), transparent 25%), radial-gradient(circle at 80% 30%, rgba(255,255,255,0.2), transparent 20%)'
       }
     };
   }

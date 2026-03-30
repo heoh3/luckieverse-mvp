@@ -124,13 +124,13 @@ function loadGames(){return JSON.parse(localStorage.getItem(STORAGE)||'[]');}
 function saveGames(g){localStorage.setItem(STORAGE,JSON.stringify(g));}
 
 function initSampleData(){
-  const ver='v10';
+  const ver='v11';
   if(localStorage.getItem('lv_admin_ver')===ver)return;
   localStorage.removeItem(STORAGE);localStorage.removeItem('luckieverse_game_config');
   localStorage.setItem('lv_admin_ver',ver);
   saveGames([
-    {id:'g1',name:'두더지 테트리스',content:'games/tetris.html',active:true,clearType:'점수 도달',clearValue:3000,timeLimit:120,playDuration:120,adEntry:{on:false,required:'필수'},adReward:{on:true,required:'필수'},adUpgrade:{on:true},rewardType:'random',rewardFixedVal:3,rewardTiers:[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}],upgradeType:'random',upgradeFixedVal:6,upgradeTiers:[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}],rewardBurst:3,rewardCooldown:2,dailyRewards:5,dailyPoints:15,freePlay:true,dailyPlayLimit:0},
-    {id:'g2',name:'두더지 잡기',content:'games/whack-a-mole.html',active:true,clearType:'점수 도달',clearValue:2000,timeLimit:60,playDuration:60,adEntry:{on:false,required:'필수'},adReward:{on:true,required:'필수'},adUpgrade:{on:true},rewardType:'random',rewardFixedVal:3,rewardTiers:[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}],upgradeType:'random',upgradeFixedVal:6,upgradeTiers:[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}],rewardBurst:3,rewardCooldown:2,dailyRewards:5,dailyPoints:15,freePlay:true,dailyPlayLimit:0},
+    {id:'g1',name:'두더지 잡기',content:'games/whack-a-mole.html',active:true,clearType:'점수 도달',clearValue:2000,timeLimit:30,playDuration:60,adEntry:{on:false},adReward:{on:true},adUpgrade:{on:true},adReplay:{on:true,count:1,time:20},rewardType:'random',rewardFixedVal:1,rewardTiers:[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}],upgradeType:'random',upgradeFixedVal:6,upgradeTiers:[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}],rewardBurst:3,rewardCooldown:2,dailyRewards:5,dailyPoints:15,freePlay:true,dailyPlayLimit:0},
+    {id:'g2',name:'풍선 터뜨리기',content:'games/balloon-pop.html',active:true,clearType:'점수 도달',clearValue:3000,timeLimit:30,playDuration:60,adEntry:{on:false},adReward:{on:true},adUpgrade:{on:true},adReplay:{on:true,count:1,time:20},rewardType:'random',rewardFixedVal:1,rewardTiers:[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}],upgradeType:'random',upgradeFixedVal:6,upgradeTiers:[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}],rewardBurst:3,rewardCooldown:2,dailyRewards:5,dailyPoints:15,freePlay:true,dailyPlayLimit:0},
   ]);
 }
 

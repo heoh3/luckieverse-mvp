@@ -171,7 +171,7 @@ function toggleActive(id,val){
 function addGame(){
   const games=loadGames();
   const id='g'+Date.now();
-  games.push({id,name:'새 게임',content:'games/tetris.html',active:true,clearType:'점수 도달',clearValue:3000,timeLimit:30,playDuration:60,adEntry:{on:false,required:'필수'},adReward:{on:true,required:'필수'},adUpgrade:{on:true},rewardType:'random',rewardFixedVal:3,rewardTiers:[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}],upgradeType:'random',upgradeFixedVal:6,upgradeTiers:[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}],rewardBurst:3,rewardCooldown:2,dailyRewards:5,dailyPoints:15,freePlay:true,dailyPlayLimit:0});
+  games.push({id,name:'새 게임',content:'games/whack-a-mole.html',active:true,clearType:'점수 도달',clearValue:3000,timeLimit:30,playDuration:60,adEntry:{on:false,required:'필수'},adReward:{on:true,required:'필수'},adUpgrade:{on:true},rewardType:'random',rewardFixedVal:3,rewardTiers:[{p:1,pct:50},{p:2,pct:35},{p:3,pct:15}],upgradeType:'random',upgradeFixedVal:6,upgradeTiers:[{p:2,pct:40},{p:4,pct:35},{p:6,pct:25}],rewardBurst:3,rewardCooldown:2,dailyRewards:5,dailyPoints:15,freePlay:true,dailyPlayLimit:0});
   saveGames(games);
   location.href='admin-detail.html?id='+id;
 }

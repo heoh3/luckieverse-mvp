@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Balloon Pop</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+body{
+  background:linear-gradient(180deg,#74B9FF 0%,#A8D8F0 55%,#CCEEBB 100%);
+  overflow:hidden;touch-action:none;
+  width:100%;height:100vh;
+  position:relative;
+}
+.cloud{position:absolute;background:#fff;border-radius:50px;opacity:0.5;}
+.legend{
+  position:absolute;top:10px;right:10px;z-index:30;
+  display:flex;flex-direction:column;gap:6px;
+  padding:10px 12px;border-radius:16px;
+  background:rgba(20,72,141,0.24);
+  border:1px solid rgba(255,255,255,0.28);
+  backdrop-filter:blur(6px);
+  color:#fff;pointer-events:none;
+}
+.legend-title{font-size:10px;font-weight:800;letter-spacing:.08em;color:#dff6ff;}
+.legend-row{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;white-space:nowrap;}
+.legend-dot{width:12px;height:12px;border-radius:50%;box-shadow:inset 0 1px 2px rgba(255,255,255,0.5),0 2px 4px rgba(0,0,0,0.18);}
+.fx{
+  position:absolute;pointer-events:none;
+  font-size:22px;font-weight:900;z-index:20;
+  animation:fxUp 0.8s ease-out forwards;
+}
+@keyframes fxUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-70px) scale(1.6);}}
+.burst{
+  position:absolute;pointer-events:none;
+  border-radius:50%;z-index:19;
+  animation:popBurst 0.35s ease-out forwards;
+}
+@keyframes popBurst{0%{transform:scale(0.2);opacity:0.9;}100%{transform:scale(2.8);opacity:0;}}
+.balloon{position:absolute;cursor:pointer;user-select:none;z-index:10;}
+</style>
+</head>
+<body>
+<div class="legend">
+  <div class="legend-title">BALLOON SCORE</div>
+  <div class="legend-row"><span class="legend-dot" style="background:#FF4757;"></span><span style="color:#ffd7dc;">빨강 100점</span></div>
+  <div class="legend-row"><span class="legend-dot" style="background:#339AF0;"></span><span style="color:#d9f0ff;">파랑 150점</span></div>
+  <div class="legend-row"><span class="legend-dot" style="background:#FFD700;"></span><span style="color:#fff0a6;">골드 300점</span></div>
+</div>
+<script>
+const TYPES=[
+  {id:'red',  color:'#FF4757',dark:'#C0392B',shine:'#FF8FA3',score:100,chance:0.55,w:48,h:60,speed:1.3},
+  {id:'blue', color:'#339AF0',dark:'#1864AB',shine:'#74C0FC',score:150,chance:0.30,w:42,h:53,speed:1.7},
+  {id:'gold', color:'#FFD700',dark:'#E67700',shine:'#FFE066',score:300,chance:0.15,w:38,h:48,speed:2.1},
+];
+
+let score=0,active=false,balloons=[],spawnIv=null,raf=null;
+
+function send(type,data){window.parent.postMessage({type,...(data||{})},'*');}
+
+window.addEventListener('message',e=>{
+  if(!e.data||!e.data.type)return;
+  switch(e.data.type){
+    case 'start': startGame(); break;
+    case 'pause': active=false; break;
+    case 'resume': active=true; if(!raf)raf=requestAnimationFrame(loop); break;
+    case 'continueGranted': active=true; startSpawn(); if(!raf)raf=requestAnimationFrame(loop); break;
+  }
+});
+
+send('ready');
+
+// 구름 배경 생성
+(function makeClouds(){
+  const sizes=[[80,28],[120,36],[60,22],[100,32]];
+  sizes.forEach(([w,h],i)=>{
+    const c=document.createElement('div');
+    c.className='cloud';
+    c.style.cssText=`width:${w}px;height:${h}px;top:${10+i*18}%;left:${(i*27+5)%90}%;`;
+    document.body.appendChild(c);
+  });
+})();
+
+function pickType(){
+  const r=Math.random();let acc=0;
+  for(const t of TYPES){acc+=t.chance;if(r<=acc)return t;}
+  return TYPES[0];
+}
+
+function makeSVG(t){
+  const w=t.w,h=t.h,cx=w/2,cy=h/2;
+  return `<svg width="${w}" height="${h+20}" viewBox="0 0 ${w} ${h+20}" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="${cx}" cy="${cy}" rx="${w/2}" ry="${h/2}" fill="${t.color}"/>
+    <ellipse cx="${cx-w*0.17}" cy="${cy-h*0.18}" rx="${w*0.13}" ry="${h*0.1}" fill="${t.shine}" opacity="0.75"/>
+    <path d="M${cx-3} ${h} C${cx-5} ${h+7} ${cx+5} ${h+13} ${cx} ${h+20}" stroke="${t.dark}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function spawnBalloon(){
+  if(!active)return;
+  const type=pickType();
+  const x=12+Math.random()*(window.innerWidth-type.w-24);
+  const el=document.createElement('div');
+  el.className='balloon';
+  el.innerHTML=makeSVG(type);
+  el.style.left=x+'px';
+  el.style.top=(window.innerHeight+70)+'px';
+  const b={
+    el,type,x,y:window.innerHeight+70,
+    vy:-(type.speed+Math.random()*0.7),
+    drift:(Math.random()-0.5)*0.5,
+    wobble:{phase:Math.random()*Math.PI*2,amp:0.3+Math.random()*0.5},
+    t:0,popped:false
+  };
+  balloons.push(b);
+  document.body.appendChild(el);
+  el.addEventListener('touchstart',e=>{e.preventDefault();popBalloon(b);},{passive:false});
+  el.addEventListener('mousedown',e=>{e.preventDefault();popBalloon(b);});
+}
+
+function popBalloon(b){
+  if(b.popped||!active)return;
+  b.popped=true;
+  const cx=b.x+b.type.w/2;
+  const cy=b.y+b.type.h/2;
+  // 점수 fx
+  const fx=document.createElement('div');
+  fx.className='fx';
+  fx.textContent='+'+b.type.score;
+  fx.style.cssText=`left:${cx-24}px;top:${cy-16}px;color:${b.type.color};text-shadow:0 2px 8px ${b.type.dark};`;
+  document.body.appendChild(fx);
+  setTimeout(()=>fx.remove(),800);
+  // 터짐 효과
+  const bst=document.createElement('div');
+  bst.className='burst';
+  bst.style.cssText=`width:52px;height:52px;left:${cx-26}px;top:${cy-26}px;background:radial-gradient(circle,${b.type.color}bb 0%,transparent 70%);`;
+  document.body.appendChild(bst);
+  setTimeout(()=>bst.remove(),350);
+  b.el.remove();
+  score+=b.type.score;
+  send('scoreChange',{score});
+}
+
+function loop(){
+  if(!active){raf=null;return;}
+  const dead=[];
+  for(const b of balloons){
+    if(b.popped){dead.push(b);continue;}
+    b.t+=0.05;
+    b.y+=b.vy;
+    b.x+=b.drift+Math.sin(b.t+b.wobble.phase)*b.wobble.amp;
+    b.el.style.top=b.y+'px';
+    b.el.style.left=b.x+'px';
+    if(b.y<-120){b.el.remove();dead.push(b);}
+  }
+  balloons=balloons.filter(b=>!dead.includes(b));
+  raf=requestAnimationFrame(loop);
+}
+
+function startSpawn(){
+  if(spawnIv)clearInterval(spawnIv);
+  spawnIv=setInterval(spawnBalloon,500);
+  for(let i=0;i<4;i++)setTimeout(spawnBalloon,i*130);
+}
+
+function startGame(){
+  score=0;active=true;
+  balloons.forEach(b=>b.el.remove());
+  balloons=[];
+  send('scoreChange',{score:0});
+  startSpawn();
+  if(raf)cancelAnimationFrame(raf);
+  raf=requestAnimationFrame(loop);
+}
+</script>
+</body>
+</html>

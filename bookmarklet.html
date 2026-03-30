@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Annotator 북마클릿 설치</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f6fa; padding: 40px; color: #2d3436; }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  .sub { color: #636e72; margin-bottom: 32px; }
+  .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+  .card h2 { font-size: 16px; margin-bottom: 12px; }
+  .card p { font-size: 14px; color: #636e72; margin-bottom: 12px; line-height: 1.6; }
+  .bookmarklet-link { display: inline-block; padding: 12px 24px; background: #6c5ce7; color: #fff; border-radius: 10px; font-size: 15px; font-weight: 700; text-decoration: none; cursor: grab; transition: all 0.2s; }
+  .bookmarklet-link:hover { background: #5a4bd1; }
+  .steps { padding-left: 20px; font-size: 14px; line-height: 2; color: #2d3436; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+  .tag-rec { background: #d4edda; color: #155724; }
+  .tag-local { background: #ffeaa7; color: #6d4c00; }
+  .note { font-size: 12px; color: #b2bec3; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Prototype Annotator</h1>
+  <p class="sub">아래 버튼을 브라우저 북마크 바로 드래그하세요. 어떤 프로토타입에서든 클릭하면 어노테이터가 활성화됩니다.</p>
+
+  <div class="card">
+    <h2>GitHub Pages 버전 <span class="tag tag-rec">추천</span></h2>
+    <p>GitHub Pages에 배포된 annotator.js를 로드합니다. push 후 사용 가능.</p>
+    <a class="bookmarklet-link"
+       href="javascript:void((function(){if(document.getElementById('ann-toolbar')){alert('Annotator already loaded');return;}var s=document.createElement('script');s.src='https://heoh3.github.io/luckieverse-mvp/annotator.js?v='+Date.now();document.body.appendChild(s);})())">
+      Annotator
+    </a>
+    <p class="note">* 이 버튼을 북마크 바에 드래그 &amp; 드롭 하세요</p>
+  </div>
+
+  <div class="card">
+    <h2>로컬 버전 <span class="tag tag-local">개발용</span></h2>
+    <p>localhost:3000에서 annotator.js를 로드합니다. push 없이 바로 테스트 가능.</p>
+    <a class="bookmarklet-link"
+       href="javascript:void((function(){if(document.getElementById('ann-toolbar')){alert('Annotator already loaded');return;}var s=document.createElement('script');s.src='http://localhost:3000/annotator.js?v='+Date.now();document.body.appendChild(s);})())">
+      Annotator (Local)
+    </a>
+    <p class="note">* localhost:3000에서 서빙 중일 때만 작동</p>
+  </div>
+
+  <div class="card">
+    <h2>사용법</h2>
+    <ol class="steps">
+      <li>위 버튼을 브라우저 <strong>북마크 바</strong>에 드래그</li>
+      <li>아무 프로토타입 페이지에서 북마크 클릭</li>
+      <li>우상단에 Annotator 툴바가 나타남</li>
+      <li><strong>Annotate</strong> 클릭 → 화면에 핀 추가</li>
+      <li>화면 탭(+)으로 여러 상태 분리 관리</li>
+    </ol>
+  </div>
+</div>
+</body>
+</html>

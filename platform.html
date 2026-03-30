@@ -6,42 +6,100 @@
 <title>Luckieverse Platform</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-body{background:#2c1810;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden;}
-.gc{position:relative;width:375px;height:740px;overflow:hidden;border-radius:20px;box-shadow:0 0 40px rgba(0,0,0,0.5);background:linear-gradient(180deg,#4a3728 0%,#6b5240 15%,#8b7355 30%,#c4a882 50%,#e8d5b5 70%,#f5ecd8 100%);}
+body{
+  --page-bg:#2c1810;
+  --shell-bg:linear-gradient(180deg,#4a3728 0%,#6b5240 15%,#8b7355 30%,#c4a882 50%,#e8d5b5 70%,#f5ecd8 100%);
+  --shell-overlay:none;
+  --header-bg:linear-gradient(180deg,rgba(74,55,40,0.95) 0%,rgba(74,55,40,0.7) 80%,transparent 100%);
+  --panel-bg:rgba(0,0,0,0.3);
+  --panel-text:#e8d5b5;
+  --muted:#c4a882;
+  --value:#ffd700;
+  --button-bg:linear-gradient(135deg,#ffd700,#ffaa00);
+  --button-text:#4a3728;
+  --outline:#c4a882;
+  --card-bg:rgba(74,55,40,0.9);
+  --card-border:#c4a882;
+  --progress-bg:linear-gradient(90deg,#ffd700,#ffaa00);
+  --start-art:
+    radial-gradient(circle at 20% 20%,rgba(255,215,0,0.18),transparent 20%),
+    radial-gradient(circle at 80% 30%,rgba(255,255,255,0.12),transparent 18%);
+  background:var(--page-bg);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden;
+}
+.gc{
+  position:relative;width:375px;height:740px;overflow:hidden;border-radius:20px;box-shadow:0 0 40px rgba(0,0,0,0.5);
+  background:var(--shell-overlay),var(--shell-bg);
+}
 
 /* Header */
-.hdr{position:absolute;top:0;left:0;right:0;padding:12px 16px;z-index:10;background:linear-gradient(180deg,rgba(74,55,40,0.95) 0%,rgba(74,55,40,0.7) 80%,transparent 100%);}
+.hdr{position:absolute;top:0;left:0;right:0;padding:12px 16px;z-index:10;background:var(--header-bg);}
 .hr{display:flex;justify-content:space-between;align-items:center;}
-.hb{background:rgba(0,0,0,0.3);border-radius:12px;padding:6px 14px;text-align:center;}
-.hl{font-size:10px;color:#c4a882;}.hv{font-size:20px;font-weight:800;color:#ffd700;}
+.hb{background:var(--panel-bg);border-radius:12px;padding:6px 14px;text-align:center;}
+.hl{font-size:10px;color:var(--muted);}.hv{font-size:20px;font-weight:800;color:var(--value);}
 .hv.w{color:#fff;}.hv.warn{color:#ff6b6b;animation:pulse .5s infinite;}
 @keyframes pulse{50%{opacity:.5;}}
-.tb{background:rgba(255,215,0,0.15);border:1px solid rgba(255,215,0,0.3);border-radius:12px;padding:6px 14px;text-align:center;}
+.tb{background:color-mix(in srgb,var(--value) 15%, transparent);border:1px solid color-mix(in srgb,var(--value) 30%, transparent);border-radius:12px;padding:6px 14px;text-align:center;}
 .pw{margin-top:8px;background:rgba(0,0,0,0.3);border-radius:6px;height:8px;overflow:hidden;}
-.pb{height:100%;background:linear-gradient(90deg,#ffd700,#ffaa00);border-radius:6px;transition:width .3s;}
+.pb{height:100%;background:var(--progress-bg);border-radius:6px;transition:width .3s;}
 
 /* Game iframe */
 #gameFrame{position:absolute;top:96px;left:0;right:0;bottom:0;border:none;width:100%;height:calc(100% - 96px);z-index:1;}
 
 /* Items */
 .items{position:absolute;bottom:16px;left:0;right:0;display:flex;justify-content:center;gap:10px;padding:0 12px;z-index:10;}
-.ibtn{background:rgba(74,55,40,0.9);border:2px solid #c4a882;border-radius:14px;padding:8px 10px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;text-align:center;min-width:75px;transition:all .2s;position:relative;}
+.ibtn{background:var(--card-bg);border:2px solid var(--card-border);border-radius:14px;padding:8px 10px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;text-align:center;min-width:75px;transition:all .2s;position:relative;}
 .ibtn:active{transform:scale(.95);}.ibtn.off{opacity:.4;pointer-events:none;}
 .ibtn .ic{font-size:20px;display:block;margin-bottom:2px;}
 .ibtn .nm{display:block;font-size:10px;}
 .ibtn .cnt{position:absolute;top:-6px;right:-6px;background:#ff6b6b;color:#fff;font-size:10px;font-weight:800;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
-.ibtn .ab{font-size:8px;color:#ffd700;display:block;margin-top:2px;}
+.ibtn .ab{font-size:8px;color:var(--value);display:block;margin-top:2px;}
 
 /* Overlays */
 .ov{position:absolute;top:0;left:0;right:0;bottom:0;display:none;z-index:100;flex-direction:column;align-items:center;justify-content:center;}
 .ov.show{display:flex;}
 .obg{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);}
 .oc{position:relative;z-index:1;text-align:center;padding:24px;width:100%;}
+.start-card{
+  position:relative;
+  margin:0 20px;
+  padding:28px 24px 24px;
+  border-radius:28px;
+  overflow:hidden;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)),
+    var(--start-art),
+    rgba(0,0,0,0.24);
+  border:1px solid rgba(255,255,255,0.12);
+  box-shadow:0 18px 40px rgba(0,0,0,0.28);
+}
+.start-card::before{
+  content:"";
+  position:absolute;
+  inset:-20% -10% auto auto;
+  width:180px;
+  height:180px;
+  border-radius:50%;
+  background:color-mix(in srgb,var(--value) 26%, transparent);
+  filter:blur(32px);
+  opacity:.6;
+}
+.start-card::after{
+  content:"";
+  position:absolute;
+  inset:auto auto -24px -24px;
+  width:160px;
+  height:160px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  filter:blur(20px);
+}
 .gbtn{padding:14px 40px;border:none;border-radius:50px;font-size:18px;font-weight:800;cursor:pointer;transition:all .2s;}
 .gbtn:active{transform:scale(.95);}
-.bg{background:linear-gradient(135deg,#ffd700,#ffaa00);color:#4a3728;box-shadow:0 4px 15px rgba(255,215,0,0.4);}
+.bg{background:var(--button-bg);color:var(--button-text);box-shadow:0 4px 15px color-mix(in srgb,var(--value) 40%, transparent);}
 .bgr{background:linear-gradient(135deg,#8bc63f,#6ba52a);color:#fff;}
-.bo{background:transparent;border:2px solid #c4a882;color:#c4a882;padding:12px 32px;font-size:14px;}
+.bo{background:transparent;border:2px solid var(--outline);color:var(--outline);padding:12px 32px;font-size:14px;}
 .bs{padding:10px 24px;font-size:14px;}
 .box{border-radius:20px;margin:0 24px;padding:28px 24px;}
 .box-clear{background:linear-gradient(135deg,#2a4a1f,#3d6b2a);border:2px solid #8bc63f;}
@@ -76,8 +134,8 @@ body{background:#2c1810;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
 .abi-l{display:flex;align-items:center;gap:8px;}
 .abi-ic{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px;background:linear-gradient(135deg,#667eea,#764ba2);}
 .abi-nm{font-size:11px;color:#aaa;}.abi-r{display:flex;align-items:center;gap:12px;}.atm{font-size:11px;color:#aaa;}
-.no-cfg{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#2c1810;color:#c4a882;text-align:center;padding:24px;z-index:300;}
-.no-cfg h2{color:#ffd700;margin-bottom:8px;}
+.no-cfg{position:absolute;top:0;left:0;right:0;bottom:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--page-bg);color:var(--muted);text-align:center;padding:24px;z-index:300;}
+.no-cfg h2{color:var(--value);margin-bottom:8px;}
 </style>
 </head>
 <body>
@@ -103,14 +161,18 @@ body{background:#2c1810;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',
   <div class="ov show" id="scrStart">
     <div class="obg"></div>
     <div class="oc">
-      <div style="font-size:64px;margin-bottom:12px;">⛏️</div>
-      <div style="font-size:28px;font-weight:900;color:#ffd700;margin-bottom:4px;" id="startTitle">두더지 테트리스</div>
-      <div style="font-size:14px;color:#c4a882;margin-bottom:24px;" id="startDesc"></div>
-      <div style="background:rgba(0,0,0,.3);border-radius:16px;padding:16px;margin:0 24px 24px;text-align:left;color:#e8d5b5;font-size:13px;line-height:1.8;">
-        <strong style="color:#ffd700;">📦 조작:</strong> 좌우 스와이프 이동, 아래 스와이프 드롭, 탭 회전<br>
-        <strong style="color:#ffd700;">💰 보상:</strong> 클리어 시 포인트 획득
+      <div class="start-card">
+        <div style="position:relative;z-index:1;">
+          <div style="font-size:64px;margin-bottom:12px;" id="startIcon">⛏️</div>
+          <div style="font-size:28px;font-weight:900;color:var(--value);margin-bottom:4px;" id="startTitle">두더지 테트리스</div>
+          <div style="font-size:14px;color:var(--muted);margin-bottom:24px;" id="startDesc"></div>
+          <div style="background:var(--panel-bg);border-radius:16px;padding:16px;margin:0 0 24px;text-align:left;color:var(--panel-text);font-size:13px;line-height:1.8;">
+            <strong style="color:var(--value);">📦 조작:</strong> <span id="startControls">좌우 스와이프 이동, 아래 스와이프 드롭, 탭 회전</span><br>
+            <strong style="color:var(--value);">💰 보상:</strong> <span id="startRewardDesc">클리어 시 포인트 획득</span>
+          </div>
+          <button class="gbtn bg" onclick="handleStart()">게임 시작</button>
+        </div>
       </div>
-      <button class="gbtn bg" onclick="handleStart()">게임 시작</button>
     </div>
   </div>
 
@@ -377,8 +439,106 @@ function hideGameUI(){document.getElementById('hdr').style.display='none';docume
 function show(id){document.getElementById(id).classList.add('show');}
 function confetti(id){const c=document.getElementById(id);c.innerHTML='';const cols=['#ffd700','#ff6b6b','#8bc63f','#3c8dbc','#e07b39','#7b5ea7'];for(let i=0;i<40;i++){const p=document.createElement('div');p.className='cfp';p.style.left=Math.random()*100+'%';p.style.background=cols[Math.floor(Math.random()*cols.length)];p.style.animationDuration=(1.5+Math.random()*2)+'s';p.style.animationDelay=Math.random()*.5+'s';c.appendChild(p);}}
 
+function getGamePresentation(content){
+  const path=(content||'').toLowerCase();
+  if(path.includes('balloon')){
+    return {
+      icon:'🎈',
+      controls:'화면에 떠오르는 풍선을 탭해서 터뜨리기',
+      reward:'클리어 시 포인트 획득',
+      theme:{
+        pageBg:'#7bb7ff',
+        shellBg:'linear-gradient(180deg,#5ea8ff 0%,#7fd1ff 45%,#d6f6ff 100%)',
+        shellOverlay:'radial-gradient(circle at 18% 16%, rgba(255,255,255,0.65) 0 8%, transparent 9%), radial-gradient(circle at 78% 20%, rgba(255,255,255,0.55) 0 7%, transparent 8%), radial-gradient(circle at 50% 82%, rgba(255,215,0,0.16) 0 18%, transparent 19%)',
+        headerBg:'linear-gradient(180deg,rgba(36,88,150,0.92) 0%,rgba(36,88,150,0.62) 78%,transparent 100%)',
+        panelBg:'rgba(13,55,112,0.24)',
+        panelText:'#eef9ff',
+        muted:'#d7f1ff',
+        value:'#ffe066',
+        buttonBg:'linear-gradient(135deg,#ffde59,#ff9f43)',
+        buttonText:'#5b3b00',
+        outline:'#d7f1ff',
+        cardBg:'rgba(25,88,170,0.38)',
+        cardBorder:'#c4ecff',
+        progressBg:'linear-gradient(90deg,#ffe066,#ff9f43)',
+        startArt:'radial-gradient(circle at 18% 22%, rgba(255,255,255,0.45), transparent 18%), radial-gradient(circle at 78% 16%, rgba(255,255,255,0.38), transparent 16%), linear-gradient(180deg, rgba(255,255,255,0.08), transparent 40%), radial-gradient(circle at 50% 100%, rgba(255,228,148,0.24), transparent 24%)'
+      }
+    };
+  }
+  if(path.includes('whack-a-mole')){
+    return {
+      icon:'🔨',
+      controls:'튀어나오는 두더지를 빠르게 탭해서 점수 획득',
+      reward:'클리어 시 포인트 획득',
+      theme:{
+        pageBg:'#2c1810',
+        shellBg:'linear-gradient(180deg,#4a3728 0%,#6b5240 15%,#8b7355 30%,#c4a882 50%,#e8d5b5 70%,#f5ecd8 100%)',
+        shellOverlay:'radial-gradient(circle at 50% 92%, rgba(91,148,34,0.45) 0 28%, transparent 29%), repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 16px, rgba(0,0,0,0.03) 16px 32px)',
+        headerBg:'linear-gradient(180deg,rgba(74,55,40,0.95) 0%,rgba(74,55,40,0.7) 80%,transparent 100%)',
+        panelBg:'rgba(0,0,0,0.3)',
+        panelText:'#e8d5b5',
+        muted:'#c4a882',
+        value:'#ffd700',
+        buttonBg:'linear-gradient(135deg,#ffd700,#ffaa00)',
+        buttonText:'#4a3728',
+        outline:'#c4a882',
+        cardBg:'rgba(74,55,40,0.9)',
+        cardBorder:'#c4a882',
+        progressBg:'linear-gradient(90deg,#ffd700,#ffaa00)',
+        startArt:'radial-gradient(circle at 16% 18%, rgba(255,255,255,0.12), transparent 16%), radial-gradient(circle at 84% 24%, rgba(139,198,63,0.22), transparent 20%), linear-gradient(180deg, transparent 0 68%, rgba(107,82,64,0.24) 68% 100%)'
+      }
+    };
+  }
+  return {
+    icon:'🧩',
+    controls:'좌우 스와이프로 이동, 탭으로 회전, 아래 스와이프로 즉시 드롭',
+    reward:'클리어 시 포인트 획득',
+    theme:{
+      pageBg:'#12172a',
+      shellBg:'linear-gradient(180deg,#18213d 0%,#1d2850 44%,#12172a 100%)',
+      shellOverlay:'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.06), transparent 32%), linear-gradient(180deg, rgba(255,255,255,0.03), transparent 28%)',
+      headerBg:'linear-gradient(180deg,rgba(9,13,26,0.94) 0%,rgba(9,13,26,0.68) 78%,transparent 100%)',
+      panelBg:'rgba(10,16,34,0.4)',
+      panelText:'#e1ebff',
+      muted:'#9db2dd',
+      value:'#ffd75e',
+      buttonBg:'linear-gradient(135deg,#ffd75e,#ffb938)',
+      buttonText:'#0a1330',
+      outline:'#8ea7d8',
+      cardBg:'rgba(17,25,50,0.78)',
+      cardBorder:'#5e76a8',
+      progressBg:'linear-gradient(90deg,#ffd75e,#ffb938)',
+      startArt:'linear-gradient(180deg, rgba(255,255,255,0.05), transparent 36%), radial-gradient(circle at 18% 20%, rgba(255,255,255,0.08), transparent 16%), radial-gradient(circle at 82% 18%, rgba(255,215,94,0.12), transparent 18%)'
+    }
+  };
+}
+
+function applyTheme(theme){
+  const root=document.body;
+  root.style.setProperty('--page-bg', theme.pageBg);
+  root.style.setProperty('--shell-bg', theme.shellBg);
+  root.style.setProperty('--shell-overlay', theme.shellOverlay);
+  root.style.setProperty('--header-bg', theme.headerBg);
+  root.style.setProperty('--panel-bg', theme.panelBg);
+  root.style.setProperty('--panel-text', theme.panelText);
+  root.style.setProperty('--muted', theme.muted);
+  root.style.setProperty('--value', theme.value);
+  root.style.setProperty('--button-bg', theme.buttonBg);
+  root.style.setProperty('--button-text', theme.buttonText);
+  root.style.setProperty('--outline', theme.outline);
+  root.style.setProperty('--card-bg', theme.cardBg);
+  root.style.setProperty('--card-border', theme.cardBorder);
+  root.style.setProperty('--progress-bg', theme.progressBg);
+  root.style.setProperty('--start-art', theme.startArt);
+}
+
 function applyConfig(){
+  const gameUi=getGamePresentation(CFG.content);
+  applyTheme(gameUi.theme);
+  document.getElementById('startIcon').textContent=gameUi.icon;
   document.getElementById('startTitle').textContent=CFG.name||CFG.gameName||'두더지 테트리스';
+  document.getElementById('startControls').textContent=gameUi.controls;
+  document.getElementById('startRewardDesc').textContent=gameUi.reward;
   const isTime=CFG.clearType==='시간 경과';
   const tl=isTime?(CFG.playDuration||120):(CFG.timeLimit||120);
   if(isTime){

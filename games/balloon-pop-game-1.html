@@ -62,7 +62,7 @@ body.screen-shake {
 /* ── HUD ── */
 .game-hud {
   position: absolute; top: 0; left: 0; right: 0;
-  padding: 12px 96px 12px 12px; z-index: 30;
+  padding: 12px 84px 12px 12px; z-index: 30;
   background: linear-gradient(180deg, rgba(36,88,150,0.92) 0%, rgba(36,88,150,0.62) 78%, transparent 100%);
   display: none;
 }
@@ -72,29 +72,22 @@ body.screen-shake {
   background: rgba(13,55,112,0.24);
   border-radius: 12px; padding: 6px 14px; text-align: center;
 }
-.game-hud .hud-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+.game-hud .hud-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
 .game-hud .hud-icon-btn {
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   padding: 0;
-  border: 1px solid rgba(255,255,255,0.24);
-  background: rgba(8,39,84,0.36);
-  color: #eef9ff;
-  border-radius: 50%;
-  font-size: 16px;
-  font-weight: 800;
-  line-height: 1;
+  border: 1.5px solid rgba(255,255,255,0.3);
+  background: rgba(8,39,84,0.5);
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  backdrop-filter: blur(4px);
 }
-.game-hud .hud-icon-btn:active { transform: scale(0.96); }
-.game-hud .hud-icon-btn-primary {
-  background: rgba(255,224,102,0.2);
-  border-color: rgba(255,224,102,0.42);
-  color: #fff4bf;
-}
+.game-hud .hud-icon-btn:active { transform: scale(0.93); opacity: 0.8; }
+.game-hud .hud-icon-btn svg { width: 18px; height: 18px; fill: #dbeeff; }
 .game-hud .panel-target {
   flex: 1.05 1 0;
   background: rgba(255,224,102,0.15);
@@ -243,8 +236,8 @@ body.screen-shake {
   </div>
   <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
   <div class="hud-actions">
-    <button class="hud-icon-btn hud-icon-btn-primary" type="button" aria-label="게임 일시정지" onclick="handlePause()">⏸</button>
-    <button class="hud-icon-btn" type="button" aria-label="홈으로 돌아가기" onclick="handleGoHome()">⌂</button>
+    <button class="hud-icon-btn" type="button" aria-label="일시정지" onclick="handlePause()"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
+    <button class="hud-icon-btn" type="button" aria-label="홈" onclick="handleGoHome()"><svg viewBox="0 0 24 24"><path d="M12 3L2 12h3v8h5v-6h4v6h5v-8h3z"/></svg></button>
   </div>
 </div>
 

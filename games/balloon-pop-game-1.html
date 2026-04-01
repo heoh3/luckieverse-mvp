@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Balloon Pop Game</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: linear-gradient(180deg, #245896 0%, #3A7FC8 8%, #5BA8E6 22%, #7EC8F0 42%, #A8DDF5 62%, #C4EABD 82%, #8BC34A 92%, #6DAA3C 100%);
+  overflow: hidden;
+  touch-action: none;
+  width: 100%;
+  height: 100vh;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+body.screen-shake {
+  animation: screen-shake 0.32s ease-in-out;
+}
+@keyframes screen-shake {
+  0% { transform: translate3d(0, 0, 0); }
+  18% { transform: translate3d(-8px, 3px, 0); }
+  36% { transform: translate3d(7px, -4px, 0); }
+  54% { transform: translate3d(-6px, -2px, 0); }
+  72% { transform: translate3d(5px, 3px, 0); }
+  90% { transform: translate3d(-2px, 1px, 0); }
+  100% { transform: translate3d(0, 0, 0); }
+}
+
+/* ── 배경: 태양 ── */
+.sun {
+  position: absolute; top: 28px; left: 32px;
+  width: 64px; height: 64px; z-index: 1;
+  background: radial-gradient(circle at 40% 40%, #FFF9C4 0%, #FFEE58 30%, #FFD54F 60%, #FFB300 100%);
+  border-radius: 50%;
+  box-shadow: 0 0 40px 16px rgba(255,235,59,0.35), 0 0 80px 40px rgba(255,193,7,0.15);
+}
+.sun::after {
+  content: ''; position: absolute; inset: -8px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,249,196,0.3) 0%, transparent 70%);
+  animation: sun-pulse 3s ease-in-out infinite;
+}
+@keyframes sun-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+/* ── 배경: 언덕 ── */
+.hills { position: absolute; bottom: 0; left: 0; width: 100%; height: 120px; z-index: 2; pointer-events: none; }
+
+/* ── 배경: 구름 ── */
+.cloud-group { position: absolute; z-index: 3; pointer-events: none; filter: blur(1.5px) drop-shadow(0 2px 6px rgba(0,0,0,0.05)); }
+.cloud-circle { position: absolute; background: rgba(255,255,255,0.55); border-radius: 50%; }
+@keyframes cloud-drift {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(calc(100vw + 200px)); }
+}
+
+/* ── HUD ── */
+.game-hud {
+  position: absolute; top: 0; left: 0; right: 0;
+  padding: 12px 96px 12px 12px; z-index: 30;
+  background: linear-gradient(180deg, rgba(36,88,150,0.92) 0%, rgba(36,88,150,0.62) 78%, transparent 100%);
+  display: none;
+}
+.game-hud .row { display: flex; align-items: center; gap: 8px; }
+.game-hud .panel {
+  flex: 1 1 0;
+  background: rgba(13,55,112,0.24);
+  border-radius: 12px; padding: 6px 14px; text-align: center;
+}
+.game-hud .hud-actions { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; }
+.game-hud .hud-icon-btn {
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,0.24);
+  background: rgba(8,39,84,0.36);
+  color: #eef9ff;
+  border-radius: 50%;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.game-hud .hud-icon-btn:active { transform: scale(0.96); }
+.game-hud .hud-icon-btn-primary {
+  background: rgba(255,224,102,0.2);
+  border-color: rgba(255,224,102,0.42);
+  color: #fff4bf;
+}
+.game-hud .panel-target {
+  flex: 1.05 1 0;
+  background: rgba(255,224,102,0.15);
+  border: 1px solid rgba(255,224,102,0.3);
+  border-radius: 12px; padding: 6px 14px; text-align: center;
+}
+.game-hud .label { font-size: 10px; color: #d7f1ff; }
+.game-hud .value { font-size: 20px; font-weight: 800; color: #ffe066; }
+.game-hud .value-white { font-size: 20px; font-weight: 800; color: #fff; }
+.game-hud .value-warn { color: #ff6b6b; animation: pulse 0.5s infinite; }
+@keyframes pulse { 50% { opacity: 0.5; } }
+.progress-bar { margin-top: 8px; background: rgba(0,0,0,0.3); border-radius: 6px; height: 8px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #ffe066, #ff9f43); border-radius: 6px; transition: width 0.3s; }
+
+/* ── 풍선 점수 범례 ── */
+.score-legend {
+  position: absolute; top: 100px; right: 10px; z-index: 30;
+  display: none; flex-direction: column; gap: 6px;
+  padding: 10px 12px; border-radius: 16px;
+  background: rgba(20,72,141,0.24);
+  border: 1px solid rgba(255,255,255,0.28);
+  backdrop-filter: blur(6px);
+  color: #fff; pointer-events: none;
+}
+.score-legend .title { font-size: 10px; font-weight: 800; letter-spacing: 0.08em; color: #dff6ff; }
+.score-legend .item { display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; white-space: nowrap; }
+.score-legend .dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.18);
+}
+
+/* ── 풍선 ── */
+.balloon {
+  position: absolute; cursor: pointer; user-select: none; z-index: 10;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.18));
+  transition: filter 0.1s;
+}
+.balloon:active { filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25)) brightness(1.1); }
+
+/* ── 풍선 터짐 이펙트 ── */
+.pop-score {
+  position: absolute; pointer-events: none;
+  font-size: 24px; font-weight: 900; z-index: 20;
+  animation: pop-score-up 0.9s ease-out forwards;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+}
+@keyframes pop-score-up {
+  0% { opacity: 1; transform: translateY(0) scale(1); }
+  60% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-80px) scale(1.5); }
+}
+.pop-ring {
+  position: absolute; pointer-events: none;
+  border-radius: 50%; z-index: 19;
+  animation: pop-ring-burst 0.4s ease-out forwards;
+}
+@keyframes pop-ring-burst {
+  0% { transform: scale(0.2); opacity: 0.9; }
+  100% { transform: scale(3); opacity: 0; }
+}
+.pop-shard {
+  position: absolute; pointer-events: none; z-index: 19;
+  border-radius: 40%;
+  animation: pop-shard-fly 0.55s ease-out forwards;
+}
+@keyframes pop-shard-fly {
+  0% { opacity: 1; transform: translate(0, 0) scale(1) rotate(0deg); }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0.3) rotate(var(--rot)); }
+}
+
+/* ── 오버레이 (공통) ── */
+.overlay {
+  position: absolute; inset: 0;
+  display: none; z-index: 100;
+  flex-direction: column; align-items: center; justify-content: center;
+}
+.overlay.show { display: flex; }
+.overlay-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.7); }
+.overlay-content { position: relative; z-index: 1; text-align: center; padding: 24px; width: 100%; }
+
+/* ── 버튼 ── */
+.btn { padding: 14px 40px; border: none; border-radius: 50px; font-size: 18px; font-weight: 800; cursor: pointer; transition: all 0.2s; }
+.btn:active { transform: scale(0.95); }
+.btn-primary { background: linear-gradient(135deg, #ffde59, #ff9f43); color: #5b3b00; box-shadow: 0 4px 15px rgba(255,224,102,0.4); }
+.btn-green { background: linear-gradient(135deg, #8bc63f, #6ba52a); color: #fff; }
+.btn-outline { background: transparent; border: 2px solid #d7f1ff; color: #d7f1ff; padding: 12px 32px; font-size: 14px; }
+.btn-sm { padding: 10px 24px; font-size: 14px; }
+
+/* ── 카드 ── */
+.card { border-radius: 20px; margin: 0 24px; padding: 28px 24px; }
+.card-clear { background: linear-gradient(135deg, #2a4a1f, #3d6b2a); border: 2px solid #8bc63f; }
+.card-over { background: linear-gradient(135deg, #3d1f1f, #5a2d2d); border: 2px solid #ff6b6b; }
+.card-reward { background: linear-gradient(135deg, #1f3a5a, #2a4a6b); border: 2px solid #74C0FC; }
+.card-complete { background: linear-gradient(135deg, #1f3a5a, #2a4a6b); border: 2px solid #ffd700; }
+
+.start-card {
+  position: relative; margin: 0 20px; padding: 28px 24px 24px;
+  border-radius: 28px; overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+    radial-gradient(circle at 18% 22%, rgba(255,255,255,0.45), transparent 18%),
+    radial-gradient(circle at 78% 16%, rgba(255,255,255,0.38), transparent 16%),
+    linear-gradient(180deg, rgba(255,255,255,0.08), transparent 40%),
+    radial-gradient(circle at 50% 100%, rgba(255,228,148,0.24), transparent 24%),
+    rgba(0,0,0,0.24);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.28);
+}
+
+/* ── 보상 아이콘 바운스 ── */
+.reward-icon { font-size: 56px; margin-bottom: 8px; animation: bounce 0.6s ease infinite; }
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+/* ── 컨페티 ── */
+.confetti-layer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.confetti-piece {
+  position: absolute;
+  animation: confetti-burst ease-in forwards;
+}
+@keyframes confetti-burst {
+  0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) scale(0.3) rotate(var(--rot)); opacity: 0; }
+}
+</style>
+</head>
+<body>
+
+<div class="sun"></div>
+
+<svg class="hills" viewBox="0 0 400 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0 80 Q60 30 140 65 Q200 90 260 50 Q330 20 400 60 L400 120 L0 120Z" fill="#7CB342" opacity="0.5"/>
+  <path d="M0 95 Q80 55 180 80 Q280 105 400 75 L400 120 L0 120Z" fill="#689F38" opacity="0.7"/>
+  <path d="M0 105 Q100 80 200 100 Q300 115 400 95 L400 120 L0 120Z" fill="#558B2F"/>
+</svg>
+
+<!-- HUD -->
+<div class="game-hud" id="hud">
+  <div class="row">
+    <div class="panel"><div class="label">SCORE</div><div class="value" id="scoreDisplay">0</div></div>
+    <div class="panel-target"><div class="label">TARGET</div><div class="value" id="targetDisplay" style="font-size:14px;font-weight:700;">3,000</div></div>
+    <div class="panel"><div class="label">TIME</div><div class="value-white" id="timerDisplay">0:30</div></div>
+  </div>
+  <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
+  <div class="hud-actions">
+    <button class="hud-icon-btn hud-icon-btn-primary" type="button" aria-label="게임 일시정지" onclick="handlePause()">⏸</button>
+    <button class="hud-icon-btn" type="button" aria-label="홈으로 돌아가기" onclick="handleGoHome()">⌂</button>
+  </div>
+</div>
+
+<!-- 풍선 점수 범례 -->
+<div class="score-legend" id="legend">
+  <div class="title">BALLOON SCORE</div>
+  <div class="item"><span class="dot" style="background:linear-gradient(135deg,#FF6B7A,#FF4757,#C0392B)"></span><span style="color:#ffd7dc">빨강 100점</span></div>
+  <div class="item"><span class="dot" style="background:linear-gradient(135deg,#74C0FC,#339AF0,#1864AB)"></span><span style="color:#d9f0ff">파랑 150점</span></div>
+  <div class="item"><span class="dot" style="background:linear-gradient(135deg,#FFE066,#FFD700,#E67700)"></span><span style="color:#fff0a6">골드 300점</span></div>
+  <div class="item"><span class="dot" style="background:linear-gradient(135deg,#9098a5,#495057,#111827)"></span><span style="color:#e2e8f0">폭탄 -200점</span></div>
+</div>
+
+<!-- 시작 화면 -->
+<div class="overlay show" id="scrStart">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <div class="start-card">
+      <div style="position:relative;z-index:1">
+        <div style="font-size:64px;margin-bottom:12px">🎈</div>
+        <div style="font-size:28px;font-weight:900;color:#ffe066;margin-bottom:4px">풍선 터뜨리기</div>
+        <div style="font-size:14px;color:#d7f1ff;margin-bottom:24px" id="startDesc"></div>
+        <div style="background:rgba(13,55,112,0.24);border-radius:16px;padding:16px;margin:0 0 24px;text-align:left;color:#eef9ff;font-size:13px;line-height:1.8">
+          <strong style="color:#ffe066">📦 조작:</strong> 화면에 떠오르는 풍선을 탭해서 터뜨리기<br>
+          <strong style="color:#ffe066">💰 보상:</strong> 클리어 시 포인트 획득
+        </div>
+        <button class="btn btn-primary" onclick="beginGame()">게임 시작</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 게임오버 -->
+<div class="overlay" id="scrOver">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <div class="card card-over">
+      <div style="font-size:56px;margin-bottom:8px">😢</div>
+      <div style="font-size:22px;font-weight:700;color:#ff6b6b;margin-bottom:8px">게임 오버</div>
+      <div style="font-size:16px;color:#c4a882;margin-bottom:4px">점수: <span id="overScore" style="color:#ffd700;font-weight:700">0</span></div>
+      <div style="font-size:13px;color:#e0b8b8;margin-bottom:4px">목표에 도달하지 못했습니다.</div>
+      <div style="font-size:12px;color:#e0b8b8;margin-bottom:16px">이어하기 시 15초의 추가시간이 제공됩니다.</div>
+      <button class="btn btn-primary btn-sm" onclick="handleContinue()" style="margin-bottom:10px">광고보고 이어하기</button><br>
+      <button class="btn btn-outline btn-sm" onclick="handleReset()">다시 도전</button>
+    </div>
+  </div>
+</div>
+
+<!-- 일시정지 -->
+<div class="overlay" id="scrPause">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <div class="card card-reward">
+      <div style="font-size:56px;margin-bottom:8px">⏸️</div>
+      <div style="font-size:24px;font-weight:900;color:#d7f1ff;margin-bottom:8px">게임 일시정지</div>
+      <div style="font-size:15px;color:#cfe8ff;margin-bottom:4px">점수: <span id="pauseScore" style="color:#ffd700;font-weight:800">0</span></div>
+      <div style="font-size:13px;color:#a0c4e8;margin-bottom:18px">원할 때 다시 이어서 플레이할 수 있어요.</div>
+      <button class="btn btn-primary btn-sm" onclick="handleResume()" style="margin-bottom:10px">계속하기</button><br>
+      <button class="btn btn-outline btn-sm" onclick="handleGoHome()">홈으로 돌아가기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 홈 확인 -->
+<div class="overlay" id="scrExitConfirm">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <div class="card card-over">
+      <div style="font-size:52px;margin-bottom:8px">🏠</div>
+      <div style="font-size:23px;font-weight:900;color:#ffe066;margin-bottom:8px">홈으로 돌아갈까요?</div>
+      <div style="font-size:14px;color:#f4d6d6;margin-bottom:18px">지금까지 진행한 점수와 시간이 모두 초기화됩니다.</div>
+      <button class="btn btn-primary btn-sm" onclick="confirmGoHome()" style="margin-bottom:10px">홈으로 돌아가기</button><br>
+      <button class="btn btn-outline btn-sm" onclick="cancelGoHome()">계속 플레이</button>
+    </div>
+  </div>
+</div>
+
+<!-- 클리어 -->
+<div class="overlay" id="scrClear">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <div class="confetti-layer" id="cfClear"></div>
+    <div class="card card-clear">
+      <div style="font-size:56px;margin-bottom:8px">🎉</div>
+      <div style="font-size:24px;font-weight:900;color:#8bc63f;margin-bottom:4px">클리어!</div>
+      <div style="font-size:16px;color:#c4a882;margin-bottom:16px">점수: <span id="clearScore" style="color:#ffd700;font-weight:700">0</span></div>
+      <button class="btn btn-green btn-sm" onclick="handleRewardFlow()">광고보고 보상받기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 보상 -->
+<div class="overlay" id="scrReward">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <div class="confetti-layer" id="cfReward"></div>
+    <div class="card card-reward">
+      <div class="reward-icon">🎁</div>
+      <div style="font-size:20px;font-weight:700;color:#ffd700;margin-bottom:4px">보상 획득!</div>
+      <div style="font-size:48px;font-weight:900;color:#ffd700;margin-bottom:4px" id="rewardPts">+3P</div>
+      <div style="font-size:13px;color:#a0c4e8;margin-bottom:20px">업그레이드를 위해서는 광고가 나와요</div>
+      <button class="btn btn-primary btn-sm" onclick="handleUpgradeFlow()" style="margin-bottom:10px">🎁 선물상자 업그레이드하기</button><br>
+      <button class="btn btn-outline btn-sm" onclick="handleComplete()">이대로 받기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 업그레이드 -->
+<div class="overlay" id="scrUpgrade">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <div class="confetti-layer" id="cfUpgrade"></div>
+    <div class="card card-reward" style="border-color:#ffd700">
+      <div class="reward-icon">✨</div>
+      <div style="font-size:20px;font-weight:700;color:#ffd700;margin-bottom:4px">보상 업그레이드!</div>
+      <div style="font-size:48px;font-weight:900;color:#ffd700;margin-bottom:4px" id="upgradePtsDisplay">+6P</div>
+      <div style="font-size:13px;color:#a0c4e8;margin-bottom:20px" id="upgradeDesc"></div>
+      <button class="btn btn-primary btn-sm" onclick="handleComplete()">확인</button>
+    </div>
+  </div>
+</div>
+
+<!-- 완료 -->
+<div class="overlay" id="scrComplete">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <div class="card card-complete">
+      <div style="font-size:56px;margin-bottom:8px">🏆</div>
+      <div style="font-size:14px;color:#a0c4e8;margin-bottom:4px">획득 포인트</div>
+      <div style="font-size:56px;font-weight:900;color:#ffd700;margin-bottom:16px" id="completePts">0P</div>
+      <button class="btn btn-primary btn-sm" onclick="handleReset()">한 번 더 플레이</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   게임 설정 (이 값만 수정하면 게임 밸런스 조절 가능)
+   ============================================================ */
+const CONFIG = {
+  targetScore: 3000,    // 클리어 목표 점수
+  timeLimit: 30,        // 제한 시간 (초)
+  continueTime: 15,     // 이어하기 추가 시간 (초)
+  baseReward: 3,        // 기본 보상 포인트
+  upgradeReward: 6,     // 업그레이드 보상 포인트
+  spawnInterval: 500,   // 풍선 생성 간격 (ms)
+};
+
+/* ── 풍선 종류 ── */
+const BALLOON_TYPES = [
+  { id: 'red',  color: '#FF4757', dark: '#C0392B', mid: '#E8384F', shine: '#FF8FA3', highlight: '#FFB3C1', score: 100, chance: 0.37, w: 52, h: 66, speed: 1.3 },
+  { id: 'blue', color: '#339AF0', dark: '#1864AB', mid: '#2B8CE0', shine: '#74C0FC', highlight: '#A5D8FF', score: 150, chance: 0.21, w: 46, h: 58, speed: 1.7 },
+  { id: 'gold', color: '#FFD700', dark: '#E67700', mid: '#F0C800', shine: '#FFE066', highlight: '#FFF3B0', score: 300, chance: 0.12, w: 42, h: 54, speed: 2.1 },
+  { id: 'bomb', color: '#495057', dark: '#111827', mid: '#343A40', shine: '#ADB5BD', highlight: '#DEE2E6', score: -200, chance: 0.20, w: 56, h: 68, speed: 1.9 },
+];
+
+/* ── 게임 상태 ── */
+let score = 0;
+let timeLeft = 0;
+let gameActive = false;
+let earnedPts = 0;
+let upgradePts = 0;
+let isPaused = false;
+let homeConfirmResumeOnCancel = false;
+let homeConfirmReturnOverlayId = '';
+let balloons = [];
+let spawnTimer = null;
+let timerInterval = null;
+let animFrame = null;
+
+/* ============================================================
+   배경 구름 생성
+   ============================================================ */
+(function initClouds() {
+  const data = [
+    { top: 8,  left: -80,  w: 100, circles: [[0,16,20],[18,8,26],[42,12,22],[65,17,18],[36,4,17]],  speed: 50 },
+    { top: 20, left: -160, w: 80,  circles: [[0,14,16],[14,8,20],[34,11,18],[52,15,14]],            speed: 65 },
+    { top: 5,  left: -240, w: 120, circles: [[0,18,22],[22,10,28],[48,13,24],[72,18,20],[40,5,18],[14,7,16]], speed: 75 },
+    { top: 28, left: -100, w: 70,  circles: [[0,13,15],[12,7,19],[30,10,16],[46,14,12]],            speed: 58 },
+    { top: 14, left: -200, w: 95,  circles: [[0,16,19],[16,8,24],[38,12,22],[60,16,18],[30,4,15]],  speed: 85 },
+  ];
+  data.forEach(cloud => {
+    const group = document.createElement('div');
+    group.className = 'cloud-group';
+    group.style.top = cloud.top + '%';
+    group.style.left = cloud.left + 'px';
+    group.style.width = cloud.w + 'px';
+    group.style.height = '70px';
+    group.style.animation = `cloud-drift ${cloud.speed}s linear infinite`;
+    group.style.animationDelay = (-Math.random() * cloud.speed) + 's';
+    cloud.circles.forEach(([x, y, r]) => {
+      const circle = document.createElement('div');
+      circle.className = 'cloud-circle';
+      circle.style.cssText = `left:${x}px;top:${y}px;width:${r*2}px;height:${r*2}px`;
+      group.appendChild(circle);
+    });
+    document.body.appendChild(group);
+  });
+})();
+
+/* ── 시작 화면 초기화 ── */
+(function initStartScreen() {
+  const sec = CONFIG.timeLimit;
+  const m = Math.floor(sec / 60);
+  const s = sec % 60;
+  const timeStr = m >= 1 ? m + '분' + (s ? ' ' + s + '초' : '') : s + '초';
+  document.getElementById('startDesc').textContent = `목표: ${CONFIG.targetScore.toLocaleString()}점 / ${timeStr}`;
+  document.getElementById('targetDisplay').textContent = CONFIG.targetScore.toLocaleString();
+})();
+
+/* ============================================================
+   HUD 업데이트
+   ============================================================ */
+function updateTimer() {
+  const m = Math.floor(timeLeft / 60);
+  const s = (timeLeft % 60).toString().padStart(2, '0');
+  const el = document.getElementById('timerDisplay');
+  el.textContent = `${m}:${s}`;
+  el.className = timeLeft <= 15 ? 'value-white value-warn' : 'value-white';
+}
+
+function updateScore(val) {
+  score = val;
+  document.getElementById('scoreDisplay').textContent = score.toLocaleString();
+  document.getElementById('progressBar').style.width = Math.min(100, (score / CONFIG.targetScore) * 100) + '%';
+}
+
+function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
+  updateTimer();
+  timerInterval = setInterval(() => {
+    if (!gameActive) return;
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      if (score >= CONFIG.targetScore) handleGameClear();
+      else handleGameOver();
+    }
+  }, 1000);
+}
+
+/* ============================================================
+   풍선 생성 & 렌더링
+   ============================================================ */
+function pickBalloonType() {
+  const r = Math.random();
+  let acc = 0;
+  for (const t of BALLOON_TYPES) {
+    acc += t.chance;
+    if (r <= acc) return t;
+  }
+  return BALLOON_TYPES[0];
+}
+
+function createBalloonSVG(t) {
+  const w = t.w, h = t.h, cx = w / 2, cy = h / 2;
+  const uid = t.id + '_' + Math.random().toString(36).slice(2, 8);
+  if (t.id === 'bomb') {
+    const flamePad = 8;
+    return `<svg width="${w + flamePad}" height="${h+30}" viewBox="0 0 ${w + flamePad} ${h+30}" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <radialGradient id="bomb_bg_${uid}" cx="0.34" cy="0.28" r="0.76">
+          <stop offset="0%" stop-color="#dfe6ec"/>
+          <stop offset="16%" stop-color="${t.shine}"/>
+          <stop offset="42%" stop-color="#6c757d"/>
+          <stop offset="74%" stop-color="${t.color}"/>
+          <stop offset="100%" stop-color="#0f1720"/>
+        </radialGradient>
+        <radialGradient id="bomb_gloss_${uid}" cx="0.26" cy="0.18" r="0.42">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.92"/>
+          <stop offset="38%" stop-color="#ffffff" stop-opacity="0.36"/>
+          <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="bomb_reflect_${uid}" cx="0.7" cy="0.82" r="0.34">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.18"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+        </radialGradient>
+        <radialGradient id="bomb_rim_${uid}" cx="0.5" cy="0.5" r="0.56">
+          <stop offset="68%" stop-color="#000" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#0b1120" stop-opacity="0.55"/>
+        </radialGradient>
+        <linearGradient id="bomb_cap_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#9c7a53"/>
+          <stop offset="100%" stop-color="#5e4128"/>
+        </linearGradient>
+      </defs>
+      <circle cx="${cx}" cy="${cy+10}" r="${Math.min(w, h) / 2 - 4.5}" fill="url(#bomb_bg_${uid})" stroke="#0b1120" stroke-width="1.3"/>
+      <ellipse cx="${cx-8}" cy="${cy+1}" rx="${w * 0.18}" ry="${h * 0.12}" fill="url(#bomb_gloss_${uid})"/>
+      <ellipse cx="${cx+7}" cy="${cy+18}" rx="${w * 0.19}" ry="${h * 0.12}" fill="url(#bomb_reflect_${uid})"/>
+      <circle cx="${cx}" cy="${cy+10}" r="${Math.min(w, h) / 2 - 4.5}" fill="url(#bomb_rim_${uid})"/>
+      <rect x="${cx+1}" y="18" width="10" height="7" rx="2.6" fill="url(#bomb_cap_${uid})" transform="rotate(-12 ${cx+1} 18)"/>
+      <path d="M${cx+7} 20 C${cx+13} 12 ${cx+16} 12 ${cx+18} 19" stroke="#5c4026" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M${cx+18} 19 C${cx+20} 17 ${cx+21} 17 ${cx+22} 19" stroke="#9a7b58" stroke-width="1.6" stroke-linecap="round"/>
+      <circle cx="${cx+22}" cy="19" r="3" fill="#ffd43b"/>
+      <circle cx="${cx+22}" cy="19" r="5.4" fill="#ffd43b" opacity="0.22"/>
+      <path d="M${cx+22} 11 L${cx+24} 14 L${cx+28} 14 L${cx+26} 17 L${cx+29} 21 L${cx+25} 21 L${cx+22} 25 L${cx+20} 21 L${cx+16} 22 L${cx+18} 17 L${cx+17} 13 L${cx+20} 14 Z" fill="#ff922b"/>
+      <path d="M${cx+22} 13 L${cx+23} 15 L${cx+26} 15 L${cx+24} 17 L${cx+26} 20 L${cx+22} 19 L${cx+19} 20 L${cx+20} 17 L${cx+18} 15 L${cx+21} 15 Z" fill="#fff3bf" opacity="0.7"/>
+    </svg>`;
+  }
+  return `<svg width="${w}" height="${h+22}" viewBox="0 0 ${w} ${h+22}" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="bg_${uid}" cx="0.38" cy="0.3" r="0.65" fx="0.35" fy="0.28">
+        <stop offset="0%" stop-color="${t.highlight}"/>
+        <stop offset="35%" stop-color="${t.shine}"/>
+        <stop offset="65%" stop-color="${t.color}"/>
+        <stop offset="100%" stop-color="${t.dark}"/>
+      </radialGradient>
+      <radialGradient id="sh_${uid}" cx="0.3" cy="0.25" r="0.35">
+        <stop offset="0%" stop-color="#fff" stop-opacity="0.7"/>
+        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="ri_${uid}" cx="0.7" cy="0.75" r="0.3">
+        <stop offset="0%" stop-color="#fff" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="${cx}" cy="${cy}" rx="${w/2-1}" ry="${h/2-1}" fill="url(#bg_${uid})" stroke="${t.mid}" stroke-width="0.5" stroke-opacity="0.3"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${w/2-2}" ry="${h/2-2}" fill="url(#sh_${uid})"/>
+    <ellipse cx="${cx+w*0.12}" cy="${cy+h*0.15}" rx="${w*0.2}" ry="${h*0.15}" fill="url(#ri_${uid})"/>
+    <ellipse cx="${cx-w*0.2}" cy="${cy-h*0.22}" rx="${w*0.08}" ry="${h*0.05}" fill="#fff" opacity="0.55" transform="rotate(-20 ${cx-w*0.2} ${cy-h*0.22})"/>
+    <polygon points="${cx-3},${h-1} ${cx+3},${h-1} ${cx+1.5},${h+4} ${cx-1.5},${h+4}" fill="${t.dark}" opacity="0.7"/>
+    <path d="M${cx} ${h+4} C${cx-4} ${h+9} ${cx+4} ${h+15} ${cx+1} ${h+21}" stroke="${t.dark}" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
+  </svg>`;
+}
+
+function spawnBalloon() {
+  if (!gameActive || isPaused) return;
+  const type = pickBalloonType();
+  const x = 12 + Math.random() * (window.innerWidth - type.w - 24);
+  const el = document.createElement('div');
+  el.className = 'balloon';
+  el.innerHTML = createBalloonSVG(type);
+  el.style.left = x + 'px';
+  el.style.top = (window.innerHeight + 70) + 'px';
+
+  const balloon = {
+    el, type, x, y: window.innerHeight + 70,
+    vy: -(type.speed + Math.random() * 0.7),
+    drift: (Math.random() - 0.5) * 0.5,
+    wobble: { phase: Math.random() * Math.PI * 2, amp: 0.3 + Math.random() * 0.5 },
+    t: 0, popped: false,
+  };
+  balloons.push(balloon);
+  document.body.appendChild(el);
+
+  el.addEventListener('touchstart', e => { e.preventDefault(); popBalloon(balloon); }, { passive: false });
+  el.addEventListener('mousedown', e => { e.preventDefault(); popBalloon(balloon); });
+}
+
+function popBalloon(b) {
+  if (b.popped || !gameActive || isPaused) return;
+  b.popped = true;
+  const cx = b.x + b.type.w / 2;
+  const cy = b.y + b.type.h / 2;
+  const scoreDelta = b.type.score;
+  const nextScore = Math.max(0, score + scoreDelta);
+  const scoreLabel = scoreDelta > 0 ? '+' + scoreDelta : scoreDelta.toString();
+  const scoreColor = scoreDelta > 0 ? b.type.color : '#ffe066';
+  const scoreShadow = scoreDelta > 0
+    ? `0 2px 8px ${b.type.dark},0 0 12px ${b.type.shine}`
+    : '0 2px 8px rgba(0,0,0,0.8),0 0 12px rgba(255,212,59,0.8)';
+
+  // 점수 표시
+  const scoreEl = document.createElement('div');
+  scoreEl.className = 'pop-score';
+  scoreEl.textContent = scoreLabel;
+  scoreEl.style.cssText = `left:${cx-24}px;top:${cy-16}px;color:${scoreColor};text-shadow:${scoreShadow}`;
+  document.body.appendChild(scoreEl);
+  setTimeout(() => scoreEl.remove(), 900);
+
+  // 터짐 링
+  const ring = document.createElement('div');
+  ring.className = 'pop-ring';
+  ring.style.cssText = `width:56px;height:56px;left:${cx-28}px;top:${cy-28}px;background:radial-gradient(circle,${b.type.shine}cc 0%,${b.type.color}66 40%,transparent 70%)`;
+  document.body.appendChild(ring);
+  setTimeout(() => ring.remove(), 400);
+
+  // 파편
+  for (let i = 0; i < 8; i++) {
+    const shard = document.createElement('div');
+    shard.className = 'pop-shard';
+    const angle = (Math.PI * 2 / 8) * i + Math.random() * 0.4;
+    const dist = 30 + Math.random() * 40;
+    const size = 4 + Math.random() * 6;
+    shard.style.cssText = `width:${size}px;height:${size}px;left:${cx}px;top:${cy}px;background:${Math.random()>0.5 ? b.type.color : b.type.shine};--dx:${Math.cos(angle)*dist}px;--dy:${Math.sin(angle)*dist-20}px;--rot:${(Math.random()-0.5)*360}deg`;
+    document.body.appendChild(shard);
+    setTimeout(() => shard.remove(), 550);
+  }
+
+  b.el.remove();
+  score = nextScore;
+  updateScore(score);
+
+  if (b.type.id === 'bomb') triggerScreenShake();
+}
+
+function triggerScreenShake() {
+  document.body.classList.remove('screen-shake');
+  void document.body.offsetWidth;
+  document.body.classList.add('screen-shake');
+  setTimeout(() => document.body.classList.remove('screen-shake'), 320);
+}
+
+/* ── 애니메이션 루프 ── */
+function gameLoop() {
+  if (!gameActive || isPaused) { animFrame = null; return; }
+  const dead = [];
+  for (const b of balloons) {
+    if (b.popped) { dead.push(b); continue; }
+    b.t += 0.05;
+    b.y += b.vy;
+    b.x += b.drift + Math.sin(b.t + b.wobble.phase) * b.wobble.amp;
+    b.el.style.top = b.y + 'px';
+    b.el.style.left = b.x + 'px';
+    if (b.y < -120) { b.el.remove(); dead.push(b); }
+  }
+  balloons = balloons.filter(b => !dead.includes(b));
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+function startSpawning() {
+  if (spawnTimer) clearInterval(spawnTimer);
+  spawnTimer = setInterval(spawnBalloon, CONFIG.spawnInterval);
+  for (let i = 0; i < 4; i++) setTimeout(spawnBalloon, i * 130);
+}
+
+function stopSpawning() {
+  if (spawnTimer) { clearInterval(spawnTimer); spawnTimer = null; }
+}
+
+function clearAllBalloons() {
+  balloons.forEach(b => b.el.remove());
+  balloons = [];
+}
+
+function pauseGameplay() {
+  isPaused = true;
+  stopSpawning();
+  clearInterval(timerInterval);
+}
+
+function resumeGameplay() {
+  isPaused = false;
+  gameActive = true;
+  startSpawning();
+  startTimer();
+  if (!animFrame) animFrame = requestAnimationFrame(gameLoop);
+}
+
+/* ============================================================
+   게임 플로우
+   ============================================================ */
+function beginGame() {
+  hideAllOverlays();
+  score = 0; gameActive = true; earnedPts = 0; upgradePts = 0; isPaused = false;
+  homeConfirmResumeOnCancel = false;
+  homeConfirmReturnOverlayId = '';
+  timeLeft = CONFIG.timeLimit;
+  document.getElementById('hud').style.display = 'block';
+  document.getElementById('legend').style.display = 'flex';
+  updateScore(0);
+  clearAllBalloons();
+  startTimer();
+  startSpawning();
+  if (animFrame) cancelAnimationFrame(animFrame);
+  animFrame = requestAnimationFrame(gameLoop);
+}
+
+function handleGameOver() {
+  gameActive = false;
+  isPaused = false;
+  clearInterval(timerInterval);
+  stopSpawning();
+  document.getElementById('overScore').textContent = score.toLocaleString();
+  showOverlay('scrOver');
+}
+
+function handleGameClear() {
+  gameActive = false;
+  isPaused = false;
+  clearInterval(timerInterval);
+  stopSpawning();
+  document.getElementById('clearScore').textContent = score.toLocaleString();
+  showOverlay('scrClear');
+  confetti('cfClear');
+}
+
+function handleContinue() {
+  hideAllOverlays();
+  timeLeft += CONFIG.continueTime;
+  gameActive = true;
+  isPaused = false;
+  homeConfirmResumeOnCancel = false;
+  homeConfirmReturnOverlayId = '';
+  document.getElementById('hud').style.display = 'block';
+  document.getElementById('legend').style.display = 'flex';
+  startSpawning();
+  startTimer();
+  if (!animFrame) animFrame = requestAnimationFrame(gameLoop);
+}
+
+function handlePause() {
+  if (!gameActive || isPaused) return;
+  pauseGameplay();
+  document.getElementById('pauseScore').textContent = score.toLocaleString();
+  showOverlay('scrPause');
+}
+
+function handleResume() {
+  if (!isPaused) return;
+  hideAllOverlays();
+  document.getElementById('hud').style.display = 'block';
+  document.getElementById('legend').style.display = 'flex';
+  homeConfirmResumeOnCancel = false;
+  homeConfirmReturnOverlayId = '';
+  resumeGameplay();
+}
+
+function handleGoHome() {
+  if (!gameActive && !isPaused) {
+    handleReset();
+    return;
+  }
+  const pauseOverlayVisible = document.getElementById('scrPause').classList.contains('show');
+  homeConfirmReturnOverlayId = pauseOverlayVisible ? 'scrPause' : '';
+  homeConfirmResumeOnCancel = !isPaused;
+  if (!isPaused) pauseGameplay();
+  hideAllOverlays();
+  showOverlay('scrExitConfirm');
+}
+
+function confirmGoHome() {
+  homeConfirmResumeOnCancel = false;
+  homeConfirmReturnOverlayId = '';
+  handleReset();
+}
+
+function cancelGoHome() {
+  hideAllOverlays();
+  if (homeConfirmReturnOverlayId) showOverlay(homeConfirmReturnOverlayId);
+  if (homeConfirmResumeOnCancel) {
+    document.getElementById('hud').style.display = 'block';
+    document.getElementById('legend').style.display = 'flex';
+    resumeGameplay();
+  }
+  homeConfirmResumeOnCancel = false;
+  homeConfirmReturnOverlayId = '';
+}
+
+function handleRewardFlow() {
+  hideAllOverlays();
+  earnedPts = CONFIG.baseReward;
+  document.getElementById('rewardPts').textContent = '+' + earnedPts + 'P';
+  showOverlay('scrReward');
+  confetti('cfReward');
+}
+
+function handleUpgradeFlow() {
+  hideAllOverlays();
+  upgradePts = CONFIG.upgradeReward;
+  const total = earnedPts + upgradePts;
+  document.getElementById('upgradePtsDisplay').textContent = '+' + total + 'P';
+  document.getElementById('upgradeDesc').textContent = earnedPts + 'P + 보너스 ' + upgradePts + 'P = 총 ' + total + 'P';
+  showOverlay('scrUpgrade');
+  confetti('cfUpgrade');
+}
+
+function handleComplete() {
+  hideAllOverlays();
+  document.getElementById('completePts').textContent = (earnedPts + upgradePts) + 'P';
+  showOverlay('scrComplete');
+}
+
+function handleReset() {
+  hideAllOverlays();
+  gameActive = false;
+  isPaused = false;
+  homeConfirmResumeOnCancel = false;
+  homeConfirmReturnOverlayId = '';
+  clearInterval(timerInterval);
+  stopSpawning();
+  if (animFrame) { cancelAnimationFrame(animFrame); animFrame = null; }
+  clearAllBalloons();
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('legend').style.display = 'none';
+  showOverlay('scrStart');
+}
+
+/* ============================================================
+   UI 유틸
+   ============================================================ */
+function hideAllOverlays() {
+  document.querySelectorAll('.overlay').forEach(el => el.classList.remove('show'));
+}
+
+function showOverlay(id) {
+  document.getElementById(id).classList.add('show');
+}
+
+function confetti(containerId) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = '';
+  const colors = ['#ffd700', '#ff6b6b', '#8bc63f', '#3c8dbc', '#e07b39', '#7b5ea7'];
+
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    const size = 8 + Math.random() * 12;
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 200 + Math.random() * 350;
+
+    piece.style.width = size + 'px';
+    piece.style.height = size * (0.6 + Math.random() * 0.6) + 'px';
+    piece.style.left = '50%';
+    piece.style.top = '50%';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+    piece.style.animationDuration = (0.6 + Math.random() * 0.6) + 's';
+    piece.style.animationDelay = (Math.random() * 0.15) + 's';
+    piece.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    piece.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    piece.style.setProperty('--rot', (360 + Math.random() * 720) + 'deg');
+
+    container.appendChild(piece);
+  }
+}
+</script>
+</body>
+</html>

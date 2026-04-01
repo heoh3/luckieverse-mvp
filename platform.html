@@ -182,8 +182,9 @@ body{
       <div style="font-size:56px;margin-bottom:8px;">😢</div>
       <div style="font-size:22px;font-weight:700;color:#ff6b6b;margin-bottom:8px;">게임 오버</div>
       <div style="font-size:16px;color:#c4a882;margin-bottom:4px;">점수: <span id="goScore" style="color:#ffd700;font-weight:700;">0</span></div>
-      <div style="font-size:13px;color:#636e72;margin-bottom:16px;">목표에 도달하지 못했습니다</div>
-      <button class="gbtn bg bs" id="goContBtn" onclick="handleContinue()" style="margin-bottom:10px;">💖 컨티뉴 (AD)</button><br>
+      <div style="font-size:13px;color:#e0b8b8;margin-bottom:4px;">목표에 도달하지 못했습니다.</div>
+      <div style="font-size:12px;color:#e0b8b8;margin-bottom:16px;">이어하기 시 15초의 추가시간이 제공됩니다.</div>
+      <button class="gbtn bg bs" id="goContBtn" onclick="handleContinue()" style="margin-bottom:10px;">광고보고 이어하기</button><br>
       <button class="gbtn bo bs" onclick="handleReset()">다시 도전</button>
     </div>
   </div></div>
@@ -195,7 +196,7 @@ body{
       <div style="font-size:56px;margin-bottom:8px;">🎉</div>
       <div style="font-size:24px;font-weight:900;color:#8bc63f;margin-bottom:4px;">클리어!</div>
       <div style="font-size:16px;color:#c4a882;margin-bottom:16px;">점수: <span id="clrScore" style="color:#ffd700;font-weight:700;">0</span></div>
-      <button class="gbtn bgr bs" onclick="handleRewardFlow()">보상 받기</button>
+      <button class="gbtn bgr bs" onclick="handleRewardFlow()">광고보고 보상받기</button>
     </div>
   </div></div>
 
@@ -207,7 +208,7 @@ body{
       <div style="font-size:20px;font-weight:700;color:#ffd700;margin-bottom:4px;">보상 획득!</div>
       <div style="font-size:48px;font-weight:900;color:#ffd700;margin-bottom:4px;" id="rwPts">+3P</div>
       <div style="font-size:13px;color:#c4a882;margin-bottom:20px;" id="rwDesc"></div>
-      <button class="gbtn bg bs" id="rwUpBtn" onclick="handleUpgradeFlow()" style="margin-bottom:10px;">🎁 보상 업그레이드 (AD)</button><br>
+      <button class="gbtn bg bs" id="rwUpBtn" onclick="handleUpgradeFlow()" style="margin-bottom:10px;">🎁 선물상자 업그레이드하기</button><br>
       <button class="gbtn bo bs" id="rwDoneBtn" onclick="handleComplete()">이대로 받기</button>
     </div>
   </div></div>
@@ -374,7 +375,7 @@ function handleRewardFlow(){
 }
 function showReward(){
   document.getElementById('rwPts').textContent='+'+earnedPts+'P';
-  document.getElementById('rwDesc').textContent=CFG.rewardType==='fixed'?'고정 보상이 지급되었습니다':'선물상자에서 '+earnedPts+'P가 나왔습니다!';
+  document.getElementById('rwDesc').textContent='업그레이드를 위해서는 광고가 나와요';
   const hasUp=CFG.adUpgrade&&CFG.adUpgrade.on;
   document.getElementById('rwUpBtn').style.display=hasUp?'inline-block':'none';
   document.getElementById('rwDoneBtn').textContent=hasUp?'이대로 받기':'확인';
@@ -419,7 +420,7 @@ function handleItemRequest(effect){
 function handleContinue(){
   hideAll();
   playAd('시청 완료 시 컨티뉴!',()=>{
-    timeLeft+=(CFG.adReplay?.time||20);gameActive=true;
+    timeLeft+=15;gameActive=true;
     document.getElementById('hdr').style.display='block';
     document.getElementById('gameFrame').style.display='block';
     sendToGame('continueGranted');
@@ -586,7 +587,7 @@ function applyConfig(){
     document.getElementById('dTarget').textContent=tl+'초';
     document.getElementById('dTargetLabel').textContent='SURVIVE';
   } else {
-    document.getElementById('startDesc').textContent=`목표: ${(CFG.clearValue||3000).toLocaleString()}점 / ${Math.floor(tl/60)}분${tl%60?' '+tl%60+'초':''}`;
+    document.getElementById('startDesc').textContent=`목표: ${(CFG.clearValue||3000).toLocaleString()}점 / ${Math.floor(tl/60)>=1?Math.floor(tl/60)+'분':''}${tl%60?((Math.floor(tl/60)>=1?' ':'')+tl%60+'초'):''}`;
     document.getElementById('dTarget').textContent=(CFG.clearValue||3000).toLocaleString();
     document.getElementById('dTargetLabel').textContent='TARGET';
   }

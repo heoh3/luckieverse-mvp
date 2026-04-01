@@ -27,7 +27,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .main{margin-left:240px;padding:24px 28px;flex:1;max-width:780px;}
 .breadcrumb{font-size:12px;color:#868e96;margin-bottom:12px;}
 .breadcrumb a{color:#3b5bdb;text-decoration:none;}.breadcrumb a:hover{text-decoration:underline;}
-.page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;}
+.page-header{display:flex;justify-content:flex-end;align-items:center;margin-bottom:20px;}
 .page-header h1{font-size:20px;font-weight:800;}
 .toolbar{display:flex;gap:8px;}
 .btn{padding:9px 18px;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
@@ -76,6 +76,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .fp-text{font-size:11px;color:#868e96;}.fp-arrow{color:#ced4da;font-size:12px;margin-left:24px;}
 
 .saved-toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#51cf66;color:#fff;padding:10px 24px;border-radius:10px;font-size:14px;font-weight:600;display:none;z-index:999;}
+.field-error{font-size:10px;color:#fa5252;margin-top:2px;}
+.btn-primary:disabled{background:#adb5bd;cursor:not-allowed;}
 </style>
 </head>
 <body>
@@ -114,12 +116,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </nav>
 
 <div class="main">
-  <div class="breadcrumb"><a href="admin.html">리워드 게임 관리</a> > <span id="bcName">게임 설정</span></div>
+  <div class="breadcrumb"><a href="admin.html">리워드 게임 관리</a> > 게임 상세</div>
   <div class="page-header">
-    <h1 id="panelTitle">게임 설정</h1>
     <div class="toolbar">
       <button class="btn btn-danger btn-sm" onclick="deleteGame()">삭제</button>
-      <button class="btn btn-primary btn-sm" onclick="save()">저장</button>
+      <button class="btn btn-primary btn-sm" id="saveBtn" onclick="save()">저장</button>
       <button class="btn btn-game btn-sm" onclick="openGame()">게임 미리보기</button>
     </div>
   </div>
@@ -128,7 +129,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="card">
     <div class="card-title"><span class="num">1</span>PLAY 스텝 — 게임 플레이</div>
     <div class="row">
-      <div class="field"><label>게임명</label><input type="text" id="gameName" minlength="2" maxlength="20" placeholder="2~20자"><div class="hint">유저에게 노출되는 게임 타이틀 (2~20자)</div></div>
+      <div class="field"><label>게임명</label><input type="text" id="gameName" maxlength="20" placeholder="2~20자"><div class="hint">유저에게 노출되는 게임 타이틀 (2~20자)</div><div class="field-error" id="gameNameError" style="display:none;">2~20자로 입력해주세요.</div></div>
       <div class="field"><label>게임 콘텐츠</label>
         <select id="gameContent"><option value="games/whack-a-mole.html">두더지 잡기</option><option value="games/balloon-pop.html">풍선 터뜨리기</option><option value="games/fruit-slicer.html">과일 슬라이서</option></select>
       </div>
@@ -252,8 +253,6 @@ const gameId=new URLSearchParams(location.search).get('id');
 function loadGameToForm(){
   const g=loadGames().find(g=>g.id===gameId);
   if(!g){location.href='admin.html';return;}
-  document.getElementById('panelTitle').textContent=g.name;
-  document.getElementById('bcName').textContent=g.name;
   document.getElementById('gameName').value=g.name||'';
   document.getElementById('gameContent').value=g.content||'games/tetris.html';
   document.getElementById('clearType').value=g.clearType||'점수 도달';
@@ -288,13 +287,23 @@ function renderTiers(t,cId,tId,pf){
   const s=t.reduce((a,v)=>a+v.pct,0);const el=document.getElementById(tId);
   el.textContent=t.length?`합계: ${s}%`:'';el.className='prob-total '+(Math.abs(s-100)<.01?'ok':'bad');
 }
-function renderAll(){renderTiers(rT,'rewardTiers','rewardTotal','rT');renderTiers(uT,'upgradeTiers','upgradeTotal','uT');}
+function renderAll(){renderTiers(rT,'rewardTiers','rewardTotal','rT');renderTiers(uT,'upgradeTiers','upgradeTotal','uT');updateSaveBtn();}
+function updateSaveBtn(){
+  const nameVal=document.getElementById('gameName').value.trim();
+  const nameOk=nameVal.length>=2&&nameVal.length<=20;
+  const rewardType=document.getElementById('rewardType').value;
+  const rewardOk=rewardType!=='random'||Math.abs(rT.reduce((a,v)=>a+v.pct,0)-100)<0.01;
+  const upgradeOn=document.getElementById('adUpgradeOn').checked;
+  const upgradeType=document.getElementById('upgradeType').value;
+  const upgradeOk=!upgradeOn||upgradeType!=='random'||Math.abs(uT.reduce((a,v)=>a+v.pct,0)-100)<0.01;
+  document.getElementById('saveBtn').disabled=!(nameOk&&rewardOk&&upgradeOk);
+}
 function addRTier(){rT.push({p:0,pct:0});renderAll();}
 function addUTier(){uT.push({p:0,pct:0});renderAll();}
 
 document.getElementById('adEntryOn').addEventListener('change',function(){document.getElementById('adEntryFields').style.display=this.checked?'block':'none';preview();});
 document.getElementById('adRewardOn').addEventListener('change',function(){document.getElementById('adRewardFields').style.display=this.checked?'block':'none';preview();});
-document.getElementById('adUpgradeOn').addEventListener('change',function(){document.getElementById('upgradeRewardSection').style.display=this.checked?'block':'none';preview();});
+document.getElementById('adUpgradeOn').addEventListener('change',function(){document.getElementById('upgradeRewardSection').style.display=this.checked?'block':'none';preview();updateSaveBtn();});
 document.getElementById('adReplayOn').addEventListener('change',function(){document.getElementById('adReplayFields').style.display=this.checked?'block':'none';preview();});
 
 function onClearTypeChange(){const isTime=document.getElementById('clearType').value==='시간 경과';document.getElementById('scoreFields').style.display=isTime?'none':'block';document.getElementById('timeFields').style.display=isTime?'block':'none';preview();}
@@ -338,21 +347,10 @@ function preview(){
 }
 
 function save(){
-  const nameVal=document.getElementById('gameName').value.trim();
-  if(nameVal.length<2||nameVal.length>20){
-    const el=document.getElementById('gameName');
-    el.style.borderColor='#fa5252';
-    el.focus();
-    alert('게임명은 2~20자로 입력해주세요.');
-    setTimeout(()=>el.style.borderColor='',2000);
-    return;
-  }
   const games=loadGames();const idx=games.findIndex(g=>g.id===gameId);if(idx<0)return;
   games[idx]={...games[idx],name:document.getElementById('gameName').value,content:document.getElementById('gameContent').value,clearType:document.getElementById('clearType').value,clearValue:parseInt(document.getElementById('clearValue').value)||3000,timeLimit:parseInt(document.getElementById('timeLimit').value)||120,playDuration:parseInt(document.getElementById('playDuration').value)||120,adEntry:{on:document.getElementById('adEntryOn').checked},adReward:{on:document.getElementById('adRewardOn').checked},adUpgrade:{on:document.getElementById('adUpgradeOn').checked},adReplay:{on:document.getElementById('adReplayOn').checked,count:parseInt(document.getElementById('replayCount').value)||1,time:parseInt(document.getElementById('replayTime').value)||20},rewardType:document.getElementById('rewardType').value,rewardFixedVal:parseInt(document.getElementById('rewardFixedVal').value)||3,rewardTiers:rT,upgradeType:document.getElementById('upgradeType').value,upgradeFixedVal:parseInt(document.getElementById('upgradeFixedVal').value)||6,upgradeTiers:uT,rewardBurst:parseInt(document.getElementById('rewardBurst').value)||3,rewardCooldown:parseFloat(document.getElementById('rewardCooldown').value)||2,dailyRewards:parseInt(document.getElementById('dailyRewards').value)||5,dailyPoints:parseInt(document.getElementById('dailyPoints').value)||15,freePlay:document.getElementById('freePlayOn').checked,dailyPlayLimit:parseInt(document.getElementById('dailyPlayLimit').value)||0};
   saveGames(games);
   localStorage.setItem('luckieverse_game_config',JSON.stringify(games[idx]));
-  document.getElementById('panelTitle').textContent=games[idx].name;
-  document.getElementById('bcName').textContent=games[idx].name;
   const t=document.getElementById('toast');t.style.display='block';setTimeout(()=>t.style.display='none',2000);
 }
 
@@ -364,6 +362,13 @@ function deleteGame(){
 
 function openGame(){save();window.open('platform.html','_blank');}
 
+document.getElementById('gameName').addEventListener('input',function(){
+  const val=this.value.trim();
+  const invalid=val.length>0&&(val.length<2||val.length>20);
+  document.getElementById('gameNameError').style.display=invalid?'block':'none';
+  this.style.borderColor=invalid?'#fa5252':'';
+  updateSaveBtn();
+});
 if(!gameId){location.href='admin.html';}else{loadGameToForm();}
 document.querySelectorAll('input,select').forEach(el=>{el.addEventListener('input',preview);el.addEventListener('change',preview);});
 </script></body>

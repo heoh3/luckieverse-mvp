@@ -1,0 +1,144 @@
+<mxfile>
+  <diagram name="Balloon Pop Game Flow" id="flow1">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="900">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- 시작 화면 -->
+        <mxCell id="start" value="🎈 시작 화면&#xa;(게임 설명, 조작법, 보상 안내)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;verticalAlign=middle;spacingTop=4;spacingBottom=4;" vertex="1" parent="1">
+          <mxGeometry x="560" y="30" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- 게임 시작 버튼 -->
+        <mxCell id="e1" value="게임 시작" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" edge="1" source="start" target="playing" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 게임 플레이 -->
+        <mxCell id="playing" value="🎮 게임 플레이&#xa;(풍선 터뜨리기 + 타이머 진행)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="160" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- 타임업 -->
+        <mxCell id="e2" value="시간 종료" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;fontStyle=1;fontSize=11;" edge="1" source="playing" target="check" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 점수 판정 -->
+        <mxCell id="check" value="점수 ≥ 목표?" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="610" y="290" width="140" height="100" as="geometry"/>
+        </mxCell>
+
+        <!-- 클리어 분기 -->
+        <mxCell id="e3" value="Yes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;fontStyle=1;fontSize=11;" edge="1" source="check" target="clear" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="340"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 게임오버 분기 -->
+        <mxCell id="e4" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#b85450;fontStyle=1;fontSize=11;" edge="1" source="check" target="over" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="460" y="340"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 게임오버 -->
+        <mxCell id="over" value="😢 게임 오버&#xa;점수 표시&#xa;이어하기 안내 (15초 추가)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="310" y="440" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- 클리어 -->
+        <mxCell id="clear" value="🎉 클리어!&#xa;점수 표시 + 컨페티" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="810" y="440" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- 이어하기 -->
+        <mxCell id="e5" value="광고보고 이어하기" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#d6b656;fontStyle=1;fontSize=11;" edge="1" source="over" target="playing" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="480"/>
+              <mxPoint x="200" y="195"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 다시 도전 -->
+        <mxCell id="e6" value="다시 도전" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#b85450;fontStyle=1;fontSize=11;" edge="1" source="over" target="start" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="100" y="480"/>
+              <mxPoint x="100" y="65"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 보상 받기 -->
+        <mxCell id="e7" value="광고보고 보상받기" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#82b366;fontStyle=1;fontSize=11;" edge="1" source="clear" target="reward" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 보상 화면 -->
+        <mxCell id="reward" value="🎁 보상 획득!&#xa;+3P 표시&#xa;&#34;업그레이드를 위해서는 광고가 나와요&#34;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="810" y="580" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- 업그레이드 -->
+        <mxCell id="e8" value="🎁 선물상자 업그레이드하기" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#9673a6;fontStyle=1;fontSize=11;" edge="1" source="reward" target="upgrade" parent="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 이대로 받기 -->
+        <mxCell id="e9" value="이대로 받기" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#9673a6;fontStyle=1;fontSize=11;dashed=1;" edge="1" source="reward" target="complete" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="680" y="620"/>
+              <mxPoint x="680" y="810"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 업그레이드 화면 -->
+        <mxCell id="upgrade" value="✨ 보상 업그레이드!&#xa;기본 + 보너스 합산 표시&#xa;컨페티" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="810" y="730" width="240" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- 확인 → 완료 -->
+        <mxCell id="e10" value="확인" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#9673a6;fontStyle=1;fontSize=11;" edge="1" source="upgrade" target="complete" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="930" y="830"/>
+              <mxPoint x="930" y="810"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 완료 화면 -->
+        <mxCell id="complete" value="🏆 완료&#xa;총 획득 포인트 표시" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="780" width="240" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- 한 번 더 플레이 -->
+        <mxCell id="e11" value="한 번 더 플레이" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#6c8ebf;fontStyle=1;fontSize=11;" edge="1" source="complete" target="start" parent="1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="100" y="810"/>
+              <mxPoint x="100" y="65"/>
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 이어하기 설명 노트 -->
+        <mxCell id="note1" value="이어하기 시&#xa;+15초 추가&#xa;타이머 재개" style="shape=note;whiteSpace=wrap;html=1;size=14;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;align=center;" vertex="1" parent="1">
+          <mxGeometry x="220" y="300" width="120" height="60" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

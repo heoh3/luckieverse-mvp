@@ -7,12 +7,35 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
 body{
-  background:linear-gradient(180deg,#74B9FF 0%,#A8D8F0 55%,#CCEEBB 100%);
+  background:linear-gradient(180deg,#245896 0%,#3A7FC8 8%,#5BA8E6 22%,#7EC8F0 42%,#A8DDF5 62%,#C4EABD 82%,#8BC34A 92%,#6DAA3C 100%);
   overflow:hidden;touch-action:none;
   width:100%;height:100vh;
   position:relative;
 }
-.cloud{position:absolute;background:#fff;border-radius:50px;opacity:0.5;}
+
+/* 태양 */
+.sun{
+  position:absolute;top:28px;left:32px;width:64px;height:64px;z-index:1;
+  background:radial-gradient(circle at 40% 40%,#FFF9C4 0%,#FFEE58 30%,#FFD54F 60%,#FFB300 100%);
+  border-radius:50%;
+  box-shadow:0 0 40px 16px rgba(255,235,59,0.35),0 0 80px 40px rgba(255,193,7,0.15);
+}
+.sun::after{
+  content:'';position:absolute;top:-8px;left:-8px;right:-8px;bottom:-8px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(255,249,196,0.3) 0%,transparent 70%);
+  animation:sunPulse 3s ease-in-out infinite;
+}
+@keyframes sunPulse{0%,100%{transform:scale(1);opacity:0.6;}50%{transform:scale(1.15);opacity:1;}}
+
+/* 언덕 */
+.hills{position:absolute;bottom:0;left:0;width:100%;height:120px;z-index:2;pointer-events:none;}
+
+/* 구름 */
+.cloud-group{position:absolute;z-index:3;pointer-events:none;filter:blur(1.5px) drop-shadow(0 2px 6px rgba(0,0,0,0.05));}
+.cloud-circle{position:absolute;background:rgba(255,255,255,0.55);border-radius:50%;}
+@keyframes cloudDrift{0%{transform:translateX(0);}100%{transform:translateX(calc(100vw + 200px));}}
+
 .legend{
   position:absolute;top:10px;right:10px;z-index:30;
   display:flex;flex-direction:column;gap:6px;
@@ -27,31 +50,56 @@ body{
 .legend-dot{width:12px;height:12px;border-radius:50%;box-shadow:inset 0 1px 2px rgba(255,255,255,0.5),0 2px 4px rgba(0,0,0,0.18);}
 .fx{
   position:absolute;pointer-events:none;
-  font-size:22px;font-weight:900;z-index:20;
-  animation:fxUp 0.8s ease-out forwards;
+  font-size:24px;font-weight:900;z-index:20;
+  animation:fxUp 0.9s ease-out forwards;
+  text-shadow:0 1px 0 rgba(255,255,255,0.6);
 }
-@keyframes fxUp{0%{opacity:1;transform:translateY(0) scale(1);}100%{opacity:0;transform:translateY(-70px) scale(1.6);}}
+@keyframes fxUp{0%{opacity:1;transform:translateY(0) scale(1);}60%{opacity:1;}100%{opacity:0;transform:translateY(-80px) scale(1.5);}}
 .burst{
   position:absolute;pointer-events:none;
   border-radius:50%;z-index:19;
-  animation:popBurst 0.35s ease-out forwards;
+  animation:popBurst 0.4s ease-out forwards;
 }
-@keyframes popBurst{0%{transform:scale(0.2);opacity:0.9;}100%{transform:scale(2.8);opacity:0;}}
-.balloon{position:absolute;cursor:pointer;user-select:none;z-index:10;}
+@keyframes popBurst{0%{transform:scale(0.2);opacity:0.9;}100%{transform:scale(3);opacity:0;}}
+.shard{
+  position:absolute;pointer-events:none;z-index:19;
+  border-radius:40%;
+  animation:shardFly 0.55s ease-out forwards;
+}
+@keyframes shardFly{
+  0%{opacity:1;transform:translate(0,0) scale(1) rotate(0deg);}
+  100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(0.3) rotate(var(--sr));}
+}
+.balloon{
+  position:absolute;cursor:pointer;user-select:none;z-index:10;
+  filter:drop-shadow(0 4px 8px rgba(0,0,0,0.18));
+  transition:filter 0.1s;
+}
+.balloon:active{filter:drop-shadow(0 2px 4px rgba(0,0,0,0.25)) brightness(1.1);}
 </style>
 </head>
 <body>
+<!-- 태양 -->
+<div class="sun"></div>
+
+<!-- 언덕 SVG -->
+<svg class="hills" viewBox="0 0 400 120" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M0 80 Q60 30 140 65 Q200 90 260 50 Q330 20 400 60 L400 120 L0 120Z" fill="#7CB342" opacity="0.5"/>
+  <path d="M0 95 Q80 55 180 80 Q280 105 400 75 L400 120 L0 120Z" fill="#689F38" opacity="0.7"/>
+  <path d="M0 105 Q100 80 200 100 Q300 115 400 95 L400 120 L0 120Z" fill="#558B2F"/>
+</svg>
+
 <div class="legend">
   <div class="legend-title">BALLOON SCORE</div>
-  <div class="legend-row"><span class="legend-dot" style="background:#FF4757;"></span><span style="color:#ffd7dc;">빨강 100점</span></div>
-  <div class="legend-row"><span class="legend-dot" style="background:#339AF0;"></span><span style="color:#d9f0ff;">파랑 150점</span></div>
-  <div class="legend-row"><span class="legend-dot" style="background:#FFD700;"></span><span style="color:#fff0a6;">골드 300점</span></div>
+  <div class="legend-row"><span class="legend-dot" style="background:linear-gradient(135deg,#FF6B7A,#FF4757,#C0392B);"></span><span style="color:#ffd7dc;">빨강 100점</span></div>
+  <div class="legend-row"><span class="legend-dot" style="background:linear-gradient(135deg,#74C0FC,#339AF0,#1864AB);"></span><span style="color:#d9f0ff;">파랑 150점</span></div>
+  <div class="legend-row"><span class="legend-dot" style="background:linear-gradient(135deg,#FFE066,#FFD700,#E67700);"></span><span style="color:#fff0a6;">골드 300점</span></div>
 </div>
 <script>
 const TYPES=[
-  {id:'red',  color:'#FF4757',dark:'#C0392B',shine:'#FF8FA3',score:100,chance:0.55,w:48,h:60,speed:1.3},
-  {id:'blue', color:'#339AF0',dark:'#1864AB',shine:'#74C0FC',score:150,chance:0.30,w:42,h:53,speed:1.7},
-  {id:'gold', color:'#FFD700',dark:'#E67700',shine:'#FFE066',score:300,chance:0.15,w:38,h:48,speed:2.1},
+  {id:'red',  color:'#FF4757',dark:'#C0392B',mid:'#E8384F',shine:'#FF8FA3',highlight:'#FFB3C1',score:100,chance:0.55,w:52,h:66,speed:1.3},
+  {id:'blue', color:'#339AF0',dark:'#1864AB',mid:'#2B8CE0',shine:'#74C0FC',highlight:'#A5D8FF',score:150,chance:0.30,w:46,h:58,speed:1.7},
+  {id:'gold', color:'#FFD700',dark:'#E67700',mid:'#F0C800',shine:'#FFE066',highlight:'#FFF3B0',score:300,chance:0.15,w:42,h:54,speed:2.1},
 ];
 
 let score=0,active=false,balloons=[],spawnIv=null,raf=null;
@@ -70,14 +118,31 @@ window.addEventListener('message',e=>{
 
 send('ready');
 
-// 구름 배경 생성
+// 입체 구름 생성
 (function makeClouds(){
-  const sizes=[[80,28],[120,36],[60,22],[100,32]];
-  sizes.forEach(([w,h],i)=>{
-    const c=document.createElement('div');
-    c.className='cloud';
-    c.style.cssText=`width:${w}px;height:${h}px;top:${10+i*18}%;left:${(i*27+5)%90}%;`;
-    document.body.appendChild(c);
+  const clouds=[
+    {top:8, left:-80, w:100,circles:[[0,16,20],[18,8,26],[42,12,22],[65,17,18],[36,4,17]],speed:50},
+    {top:20,left:-160,w:80, circles:[[0,14,16],[14,8,20],[34,11,18],[52,15,14]],speed:65},
+    {top:5, left:-240,w:120,circles:[[0,18,22],[22,10,28],[48,13,24],[72,18,20],[40,5,18],[14,7,16]],speed:75},
+    {top:28,left:-100,w:70, circles:[[0,13,15],[12,7,19],[30,10,16],[46,14,12]],speed:58},
+    {top:14,left:-200,w:95, circles:[[0,16,19],[16,8,24],[38,12,22],[60,16,18],[30,4,15]],speed:85},
+  ];
+  clouds.forEach(cfg=>{
+    const g=document.createElement('div');
+    g.className='cloud-group';
+    g.style.top=cfg.top+'%';
+    g.style.left=cfg.left+'px';
+    g.style.width=cfg.w+'px';
+    g.style.height='70px';
+    g.style.animation=`cloudDrift ${cfg.speed}s linear infinite`;
+    g.style.animationDelay=(-Math.random()*cfg.speed)+'s';
+    cfg.circles.forEach(([x,y,r])=>{
+      const c=document.createElement('div');
+      c.className='cloud-circle';
+      c.style.cssText=`left:${x}px;top:${y}px;width:${r*2}px;height:${r*2}px;`;
+      g.appendChild(c);
+    });
+    document.body.appendChild(g);
   });
 })();
 
@@ -88,11 +153,30 @@ function pickType(){
 }
 
 function makeSVG(t){
-  const w=t.w,h=t.h,cx=w/2,cy=h/2;
-  return `<svg width="${w}" height="${h+20}" viewBox="0 0 ${w} ${h+20}" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <ellipse cx="${cx}" cy="${cy}" rx="${w/2}" ry="${h/2}" fill="${t.color}"/>
-    <ellipse cx="${cx-w*0.17}" cy="${cy-h*0.18}" rx="${w*0.13}" ry="${h*0.1}" fill="${t.shine}" opacity="0.75"/>
-    <path d="M${cx-3} ${h} C${cx-5} ${h+7} ${cx+5} ${h+13} ${cx} ${h+20}" stroke="${t.dark}" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+  const w=t.w,h=t.h,cx=w/2,cy=h/2,uid=t.id+'_'+Math.random().toString(36).slice(2,8);
+  return `<svg width="${w}" height="${h+22}" viewBox="0 0 ${w} ${h+22}" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="bg_${uid}" cx="0.38" cy="0.3" r="0.65" fx="0.35" fy="0.28">
+        <stop offset="0%" stop-color="${t.highlight}"/>
+        <stop offset="35%" stop-color="${t.shine}"/>
+        <stop offset="65%" stop-color="${t.color}"/>
+        <stop offset="100%" stop-color="${t.dark}"/>
+      </radialGradient>
+      <radialGradient id="sh_${uid}" cx="0.3" cy="0.25" r="0.35">
+        <stop offset="0%" stop-color="#fff" stop-opacity="0.7"/>
+        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="ri_${uid}" cx="0.7" cy="0.75" r="0.3">
+        <stop offset="0%" stop-color="#fff" stop-opacity="0.15"/>
+        <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <ellipse cx="${cx}" cy="${cy}" rx="${w/2-1}" ry="${h/2-1}" fill="url(#bg_${uid})" stroke="${t.mid}" stroke-width="0.5" stroke-opacity="0.3"/>
+    <ellipse cx="${cx}" cy="${cy}" rx="${w/2-2}" ry="${h/2-2}" fill="url(#sh_${uid})"/>
+    <ellipse cx="${cx+w*0.12}" cy="${cy+h*0.15}" rx="${w*0.2}" ry="${h*0.15}" fill="url(#ri_${uid})"/>
+    <ellipse cx="${cx-w*0.2}" cy="${cy-h*0.22}" rx="${w*0.08}" ry="${h*0.05}" fill="#fff" opacity="0.55" transform="rotate(-20 ${cx-w*0.2} ${cy-h*0.22})"/>
+    <polygon points="${cx-3},${h-1} ${cx+3},${h-1} ${cx+1.5},${h+4} ${cx-1.5},${h+4}" fill="${t.dark}" opacity="0.7"/>
+    <path d="M${cx} ${h+4} C${cx-4} ${h+9} ${cx+4} ${h+15} ${cx+1} ${h+21}" stroke="${t.dark}" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.5"/>
   </svg>`;
 }
 
@@ -127,15 +211,30 @@ function popBalloon(b){
   const fx=document.createElement('div');
   fx.className='fx';
   fx.textContent='+'+b.type.score;
-  fx.style.cssText=`left:${cx-24}px;top:${cy-16}px;color:${b.type.color};text-shadow:0 2px 8px ${b.type.dark};`;
+  fx.style.cssText=`left:${cx-24}px;top:${cy-16}px;color:${b.type.color};text-shadow:0 2px 8px ${b.type.dark},0 0 12px ${b.type.shine};`;
   document.body.appendChild(fx);
-  setTimeout(()=>fx.remove(),800);
-  // 터짐 효과
+  setTimeout(()=>fx.remove(),900);
+  // 터짐 링 효과
   const bst=document.createElement('div');
   bst.className='burst';
-  bst.style.cssText=`width:52px;height:52px;left:${cx-26}px;top:${cy-26}px;background:radial-gradient(circle,${b.type.color}bb 0%,transparent 70%);`;
+  bst.style.cssText=`width:56px;height:56px;left:${cx-28}px;top:${cy-28}px;background:radial-gradient(circle,${b.type.shine}cc 0%,${b.type.color}66 40%,transparent 70%);`;
   document.body.appendChild(bst);
-  setTimeout(()=>bst.remove(),350);
+  setTimeout(()=>bst.remove(),400);
+  // 파편 파티클
+  const shardCount=8;
+  for(let i=0;i<shardCount;i++){
+    const s=document.createElement('div');
+    s.className='shard';
+    const angle=(Math.PI*2/shardCount)*i+Math.random()*0.4;
+    const dist=30+Math.random()*40;
+    const sx=Math.cos(angle)*dist;
+    const sy=Math.sin(angle)*dist-20;
+    const sr=(Math.random()-0.5)*360;
+    const size=4+Math.random()*6;
+    s.style.cssText=`width:${size}px;height:${size}px;left:${cx}px;top:${cy}px;background:${Math.random()>0.5?b.type.color:b.type.shine};--sx:${sx}px;--sy:${sy}px;--sr:${sr}deg;`;
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(),550);
+  }
   b.el.remove();
   score+=b.type.score;
   send('scoreChange',{score});

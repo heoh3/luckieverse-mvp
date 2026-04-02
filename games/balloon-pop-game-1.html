@@ -193,6 +193,31 @@ body.screen-shake {
   box-shadow: 0 18px 40px rgba(0,0,0,0.28);
 }
 
+/* ── 보너스 풍선 선택 ── */
+.bonus-balloon {
+  cursor: pointer; user-select: none;
+  transition: transform 0.2s;
+  animation: bonus-float 2s ease-in-out infinite;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.3));
+}
+.bonus-balloon:nth-child(2) { animation-delay: -0.7s; }
+.bonus-balloon:nth-child(3) { animation-delay: -1.4s; }
+.bonus-balloon:active { transform: scale(0.9); }
+@keyframes bonus-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+.bonus-balloon.popped { animation: bonus-pop 0.3s ease-out forwards; pointer-events: none; }
+.bonus-balloon.unselected { animation: bonus-fade 0.4s ease-out forwards; pointer-events: none; }
+@keyframes bonus-pop {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+  100% { transform: scale(0); opacity: 0; }
+}
+@keyframes bonus-fade {
+  to { opacity: 0.2; transform: scale(0.85); }
+}
+
 /* ── 보상 아이콘 바운스 ── */
 .reward-icon { font-size: 56px; margin-bottom: 8px; animation: bounce 0.6s ease infinite; }
 @keyframes bounce {
@@ -331,23 +356,33 @@ body.screen-shake {
       <div class="reward-icon">🎁</div>
       <div style="font-size:20px;font-weight:700;color:#ffd700;margin-bottom:4px">보상 획득!</div>
       <div style="font-size:48px;font-weight:900;color:#ffd700;margin-bottom:4px" id="rewardPts">+3P</div>
-      <div style="font-size:13px;color:#a0c4e8;margin-bottom:20px">업그레이드를 위해서는 광고가 나와요</div>
-      <button class="btn btn-primary btn-sm" onclick="handleUpgradeFlow()" style="margin-bottom:10px">🎁 선물상자 업그레이드하기</button><br>
+      <div style="font-size:13px;color:#a0c4e8;margin-bottom:20px">광고를 보고 보너스 풍선을 터뜨려보세요!</div>
+      <button class="btn btn-primary btn-sm" onclick="handleBonusBalloonFlow()" style="margin-bottom:10px">🎈 보너스 풍선 터뜨리고 추가 포인트 받기</button><br>
       <button class="btn btn-outline btn-sm" onclick="handleComplete()">이대로 받기</button>
     </div>
   </div>
 </div>
 
-<!-- 업그레이드 -->
-<div class="overlay" id="scrUpgrade">
+<!-- 보너스 풍선 선택 -->
+<div class="overlay" id="scrBonusPick">
   <div class="overlay-bg"></div>
   <div class="overlay-content">
-    <div class="confetti-layer" id="cfUpgrade"></div>
+    <div style="font-size:22px;font-weight:900;color:#ffe066;margin-bottom:6px">보너스 풍선!</div>
+    <div style="font-size:14px;color:#d7f1ff;margin-bottom:28px">풍선 하나를 터뜨려 추가 포인트를 받으세요</div>
+    <div id="bonusBalloons" style="display:flex;justify-content:center;gap:24px;margin-bottom:16px"></div>
+  </div>
+</div>
+
+<!-- 보너스 결과 -->
+<div class="overlay" id="scrBonusResult">
+  <div class="overlay-bg"></div>
+  <div class="overlay-content">
+    <div class="confetti-layer" id="cfBonus"></div>
     <div class="card card-reward" style="border-color:#ffd700">
-      <div class="reward-icon">✨</div>
-      <div style="font-size:20px;font-weight:700;color:#ffd700;margin-bottom:4px">보상 업그레이드!</div>
-      <div style="font-size:48px;font-weight:900;color:#ffd700;margin-bottom:4px" id="upgradePtsDisplay">+6P</div>
-      <div style="font-size:13px;color:#a0c4e8;margin-bottom:20px" id="upgradeDesc"></div>
+      <div style="font-size:56px;margin-bottom:8px">🎉</div>
+      <div style="font-size:20px;font-weight:700;color:#ffd700;margin-bottom:4px">보너스 포인트!</div>
+      <div style="font-size:48px;font-weight:900;color:#ffd700;margin-bottom:4px" id="bonusPtsDisplay">+3P</div>
+      <div style="font-size:13px;color:#a0c4e8;margin-bottom:20px" id="bonusDesc"></div>
       <button class="btn btn-primary btn-sm" onclick="handleComplete()">확인</button>
     </div>
   </div>
@@ -375,7 +410,7 @@ const CONFIG = {
   timeLimit: 30,        // 제한 시간 (초)
   continueTime: 15,     // 이어하기 추가 시간 (초)
   baseReward: 3,        // 기본 보상 포인트
-  upgradeReward: 6,     // 업그레이드 보상 포인트
+  bonusOptions: [2, 3, 5],  // 보너스 풍선 포인트 옵션
   spawnInterval: 500,   // 풍선 생성 간격 (ms)
 };
 
@@ -789,14 +824,43 @@ function handleRewardFlow() {
   confetti('cfReward');
 }
 
-function handleUpgradeFlow() {
+function handleBonusBalloonFlow() {
   hideAllOverlays();
-  upgradePts = CONFIG.upgradeReward;
-  const total = earnedPts + upgradePts;
-  document.getElementById('upgradePtsDisplay').textContent = '+' + total + 'P';
-  document.getElementById('upgradeDesc').textContent = earnedPts + 'P + 보너스 ' + upgradePts + 'P = 총 ' + total + 'P';
-  showOverlay('scrUpgrade');
-  confetti('cfUpgrade');
+  // 보너스 포인트를 셔플
+  const opts = [...CONFIG.bonusOptions].sort(() => Math.random() - 0.5);
+  const colors = [
+    { id: 'red', color: '#FF4757', dark: '#C0392B', mid: '#E8384F', shine: '#FF8FA3', highlight: '#FFB3C1', w: 64, h: 80 },
+    { id: 'blue', color: '#339AF0', dark: '#1864AB', mid: '#2B8CE0', shine: '#74C0FC', highlight: '#A5D8FF', w: 64, h: 80 },
+    { id: 'gold', color: '#FFD700', dark: '#E67700', mid: '#F0C800', shine: '#FFE066', highlight: '#FFF3B0', w: 64, h: 80 },
+  ];
+  const container = document.getElementById('bonusBalloons');
+  container.innerHTML = '';
+  colors.forEach((c, i) => {
+    const div = document.createElement('div');
+    div.className = 'bonus-balloon';
+    div.innerHTML = createBalloonSVG(c) + '<div style="text-align:center;color:#fff;font-size:13px;font-weight:700;margin-top:4px">?</div>';
+    div.addEventListener('click', () => pickBonusBalloon(i, opts[i], div, container));
+    container.appendChild(div);
+  });
+  showOverlay('scrBonusPick');
+}
+
+function pickBonusBalloon(index, pts, el, container) {
+  if (el.classList.contains('popped')) return;
+  // 선택한 풍선 터지기, 나머지 페이드
+  Array.from(container.children).forEach((child, i) => {
+    if (i === index) child.classList.add('popped');
+    else child.classList.add('unselected');
+  });
+  upgradePts = pts;
+  setTimeout(() => {
+    hideAllOverlays();
+    const total = earnedPts + upgradePts;
+    document.getElementById('bonusPtsDisplay').textContent = '+' + upgradePts + 'P';
+    document.getElementById('bonusDesc').textContent = '기본 ' + earnedPts + 'P + 보너스 ' + upgradePts + 'P = 총 ' + total + 'P';
+    showOverlay('scrBonusResult');
+    confetti('cfBonus');
+  }, 600);
 }
 
 function handleComplete() {

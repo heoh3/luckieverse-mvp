@@ -255,7 +255,6 @@ body.screen-shake {
     <div class="panel"><div class="label">SCORE</div><div class="value" id="scoreDisplay">0</div></div>
     <div class="panel-target"><div class="label">TARGET</div><div class="value" id="targetDisplay" style="font-size:13px;font-weight:700;">3,000</div></div>
     <div class="panel"><div class="label">TIME</div><div class="value-white" id="timerDisplay">0:30</div></div>
-    <button class="hud-btn" type="button" aria-label="일시정지" onclick="handlePause()"><svg viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg></button>
   </div>
   <div class="progress-bar"><div class="progress-fill" id="progressBar" style="width:0%"></div></div>
 </div>
@@ -300,21 +299,6 @@ body.screen-shake {
       <div style="font-size:12px;color:#e0b8b8;margin-bottom:16px">이어하기 시 15초의 추가시간이 제공됩니다.</div>
       <button class="btn btn-primary btn-sm" onclick="handleContinue()" style="margin-bottom:10px">광고보고 이어하기</button><br>
       <button class="btn btn-outline btn-sm" onclick="handleReset()">다시 도전</button>
-    </div>
-  </div>
-</div>
-
-<!-- 일시정지 -->
-<div class="overlay" id="scrPause">
-  <div class="overlay-bg"></div>
-  <div class="overlay-content">
-    <div class="card card-reward">
-      <div style="font-size:56px;margin-bottom:8px">⏸️</div>
-      <div style="font-size:24px;font-weight:900;color:#d7f1ff;margin-bottom:8px">게임 일시정지</div>
-      <div style="font-size:15px;color:#cfe8ff;margin-bottom:4px">점수: <span id="pauseScore" style="color:#ffd700;font-weight:800">0</span></div>
-      <div style="font-size:13px;color:#a0c4e8;margin-bottom:18px">원할 때 다시 이어서 플레이할 수 있어요.</div>
-      <button class="btn btn-primary btn-sm" onclick="handleResume()" style="margin-bottom:10px">계속하기</button><br>
-      <button class="btn btn-outline btn-sm" onclick="handleGoHome()">홈으로 돌아가기</button>
     </div>
   </div>
 </div>
@@ -768,31 +752,12 @@ function handleContinue() {
   if (!animFrame) animFrame = requestAnimationFrame(gameLoop);
 }
 
-function handlePause() {
-  if (!gameActive || isPaused) return;
-  pauseGameplay();
-  document.getElementById('pauseScore').textContent = score.toLocaleString();
-  showOverlay('scrPause');
-}
-
-function handleResume() {
-  if (!isPaused) return;
-  hideAllOverlays();
-  document.getElementById('hud').style.display = 'block';
-  document.getElementById('legend').style.display = 'flex';
-  homeConfirmResumeOnCancel = false;
-  homeConfirmReturnOverlayId = '';
-  resumeGameplay();
-}
-
 function handleGoHome() {
   if (!gameActive && !isPaused) {
     handleReset();
     return;
   }
-  const pauseOverlayVisible = document.getElementById('scrPause').classList.contains('show');
-  homeConfirmReturnOverlayId = pauseOverlayVisible ? 'scrPause' : '';
-  homeConfirmResumeOnCancel = !isPaused;
+  homeConfirmResumeOnCancel = true;
   if (!isPaused) pauseGameplay();
   hideAllOverlays();
   showOverlay('scrExitConfirm');
@@ -806,14 +771,10 @@ function confirmGoHome() {
 
 function cancelGoHome() {
   hideAllOverlays();
-  if (homeConfirmReturnOverlayId) showOverlay(homeConfirmReturnOverlayId);
-  if (homeConfirmResumeOnCancel) {
-    document.getElementById('hud').style.display = 'block';
-    document.getElementById('legend').style.display = 'flex';
-    resumeGameplay();
-  }
+  document.getElementById('hud').style.display = 'block';
+  document.getElementById('legend').style.display = 'flex';
+  resumeGameplay();
   homeConfirmResumeOnCancel = false;
-  homeConfirmReturnOverlayId = '';
 }
 
 function handleRewardFlow() {
